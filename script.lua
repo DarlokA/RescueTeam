@@ -1,6 +1,7 @@
 g_savedata = {
 	["player"] = { name = nil, peer_id = nil, id = -1, team_name=nil},
 	["team"] = {},
+	["mission"] = { objects = {}, character_list = {}, vehicle_list = {}},
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -26,6 +27,18 @@ medical = {id = 9, name="doctor"};
 wetsuit = {id = 10, name="diver"};
 civilian = {id = 11, name="citizen"};
 
+function onSpawnAddonComponent(id, name, type, playlist_index)
+	if (playlist_index == server.getAddonIndex()) then
+		g_savedata["mission"].objects[id] = {["name"] = name, ["type"] = type};
+		if object_type == "character" then
+			g_savedata["mission"].character_list[id] = {["name"] = name, ["hired"] = false}
+		end;
+		if object_type == "vehicle" then
+			g_savedata["mission"].vehicle_list[id] = {["name"] = name, ["seat_name"] = "Capitan"}
+		end;
+	end;
+end;
+
 
 function onTick(game_ticks)
 
@@ -36,7 +49,8 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	g_savedata.player.peer_id = peer_id;
 	g_savedata.player.team_name = name.. " RS team";
 	local object_id, is_success = server.getPlayerCharacterID(peer_id);
-	savedata.player.id = object_id;
+	g_savedata.player.id = object_id;
+	server.setGameSetting("settings_menu", true);
 end
 
 function onPlayerLeave(steam_id, name, peer_id, admin, auth)
@@ -81,21 +95,37 @@ function outFitFromName( name )
 	return 0;
 end;
 
-function hire( arg1, arg2 )
+function hire( )
 	local outfit = 1;
 	local name = "worker";
-	if (arg1 ~= nil and type(arg1) == "string") then name = arg1; outfit = outFitFromName; end;
-	if (arg1 ~= nil and type(arg1) == "number") then 
-		outfit = arg1; 
-		if arg2 ~= nil then 
-			name = arg2;
-		else
-			name = nameFromOutFit(outfit);
+	local player_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
+	local ch_id = findCharacterForHire(player_pos);
+	if (ch_id > 0) then
+		
+	end;
+end;
+
+function distQ( m1, m2)
+	local x1, y1, z1 = matrix.position(m1);
+	local x2, y2, z2 = matrix.position(m2);
+	return ((x2 - x1)^2) + ((y2 - y1)^2) + ((z2 - z1)^2);
+end;
+
+function findCharacterForHire( player_pos )
+	local distQ = 100;
+	local ch_id = -1;
+	for id, c in pairs(g_savedata["mission"].character_list) do
+		local ch_pos, is_found = server.getObjectPos(id);
+		if is_found then
+			local Q = distQ(ch_pos, player_pos);
+			if (Q < 4) and (Q < distQ) then 
+				ch_id = id;
+			end;
 		end;
 	end;
-
-
+	return ch_id;
 end;
+
 
 
 function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command, arg1, arg2, arg3, arg4, arg5)
