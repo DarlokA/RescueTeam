@@ -1,7 +1,6 @@
 g_savedata = {
 	["player"] = { name = nil, peer_id = nil, id = -1, team_name=nil},
 	["team"] = {},
-	["mission"] = { objects = {}, character_list = {}, vehicle_list = {}},
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -14,29 +13,19 @@ tgt_worker_seat_name = nil;
 set_worker_id = -1;
 worker_seat_ticks = 0;
 
-none = {id = 0, name="noname"};
-worker = {id = 1, name="worker"};
-fishing = {id = 2, name="fisher"};
-waiter = {id = 3, name="waiter"};
-swimsuit = {id = 4, name="swimmer"};
-military = {id = 5, name="military"};
-office = {id = 6, name="employee"};
-police = {id = 7, name="policeman"};
-science = {id = 8, name="scientist"};
-medical = {id = 9, name="doctor"};
-wetsuit = {id = 10, name="diver"};
-civilian = {id = 11, name="citizen"};
+worker = {id = 1, name="worker", pay = 100};
+fishing = {id = 2, name="fisher", pay = 150};
+swimsuit = {id = 4, name="swimmer", pay = 150};
+military = {id = 5, name="military", pay = 250};
+office = {id = 6, name="employee", pay = 100};
+police = {id = 7, name="policeman", pay = 250};
+science = {id = 8, name="scientist", pay = 500};
+medical = {id = 9, name="doctor", pay = 150};
+wetsuit = {id = 10, name="diver", pay = 150};
+civilian = {id = 11, name="citizen", pay = 100};
 
 function onSpawnAddonComponent(id, name, type, playlist_index)
-	if (playlist_index == server.getAddonIndex()) then
-		g_savedata["mission"].objects[id] = {["name"] = name, ["type"] = type};
-		if object_type == "character" then
-			g_savedata["mission"].character_list[id] = {["name"] = name, ["hired"] = false}
-		end;
-		if object_type == "vehicle" then
-			g_savedata["mission"].vehicle_list[id] = {["name"] = name, ["seat_name"] = "Capitan"}
-		end;
-	end;
+	
 end;
 
 
@@ -50,16 +39,29 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	g_savedata.player.team_name = name.. " RS team";
 	local object_id, is_success = server.getPlayerCharacterID(peer_id);
 	g_savedata.player.id = object_id;
-	server.setGameSetting("settings_menu", true);
+	server.setGameSetting("settings_menu", true);--TODO: remove this
 end
 
 function onPlayerLeave(steam_id, name, peer_id, admin, auth)
 	
 end
 
-function printHelp()
-	server.announce("[HELP]", "?help - show this help");
-	server.announce("[HELP]", "?hire - hire new worker in to you team.");
+function printHelp(arg1)
+	if arg1 == nil then
+		server.announce("[HELP]", "?help - show this help", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?hire profession - hire new worker in to you team.", g_savedata.player.peer_id);
+	end;
+	if arg1 == "hire" or arg1 == "?hire" then
+		server.announce("[HELP]", "     - ?hire professions:", g_savedata.player.peer_id);
+		server.announce("", "     - ?hire worker. payment of $ " ..(10 * worker.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire fisher. payment of $ " ..(10 * fishing.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire military. payment of $ " ..(10 * military.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire employee. payment of $ " ..(10 * office.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire scientist. payment of $ " ..(10 * science.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire doctor. payment of $ " ..(10 * medical.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire diver. payment of $ " ..(10 * wetsuit.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire citizen. payment of $ " ..(10 * civilian.pay), g_savedata.player.peer_id);
+	end;
 end;
 
 function nameFromOutFit( outfit)
@@ -74,8 +76,8 @@ function nameFromOutFit( outfit)
 	if science.id == outFit then return science.name; end;
 	if medical.id == outFit then return medical.name; end;
 	if wetsuit.id == outFit then return wetsuit.name; end;
-	if civilian.id == outFit then return wetsuit.name; end;
-	return "noname";
+	if civilian.id == outFit then return civilian.name; end;
+	return nil;
 end;
 
 
@@ -91,17 +93,31 @@ function outFitFromName( name )
 	if science.name == name then return science.id; end;
 	if medical.name == name then return medical.id; end;
 	if wetsuit.name == name then return wetsuit.id; end;
-	if civilian.name == name then return wetsuit.id; end;
-	return 0;
+	if civilian.name == name then return civilian.id; end;
+	return nil;
 end;
 
-function hire( )
-	local outfit = 1;
-	local name = "worker";
-	local player_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
-	local ch_id = findCharacterForHire(player_pos);
-	if (ch_id > 0) then
-		
+function hire( arg1 )
+	if arg1 == nil then 
+		printHelp("hire");
+	end;
+	local outfit = nil;
+	local name = nil;
+	
+	if type(arg1) == "number" then
+		name = nameFromOutFit( arg1 );
+		outfit = outFitFromName( name );
+	end;
+	
+	if type(arg1) == "string" then
+		outfit = outFitFromName( arg1 );
+		name = nameFromOutFit( outfit );
+	end;
+	
+	if outfit == nil or name == nil then
+		printHelp( "hire" );
+	else
+		local player_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
 	end;
 end;
 
@@ -111,26 +127,11 @@ function distQ( m1, m2)
 	return ((x2 - x1)^2) + ((y2 - y1)^2) + ((z2 - z1)^2);
 end;
 
-function findCharacterForHire( player_pos )
-	local distQ = 100;
-	local ch_id = -1;
-	for id, c in pairs(g_savedata["mission"].character_list) do
-		local ch_pos, is_found = server.getObjectPos(id);
-		if is_found then
-			local Q = distQ(ch_pos, player_pos);
-			if (Q < 4) and (Q < distQ) then 
-				ch_id = id;
-			end;
-		end;
-	end;
-	return ch_id;
-end;
-
 
 
 function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command, arg1, arg2, arg3, arg4, arg5)
 
-	if (command == "?help")	then printHelp(); end;
+	if (command == "?help")	then printHelp(arg1); end;
 	if (commmnd == "?hire") then hire(arg1); end;
 
 end
