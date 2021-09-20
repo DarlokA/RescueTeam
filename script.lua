@@ -46,9 +46,23 @@ function onPlayerLeave(steam_id, name, peer_id, admin, auth)
 	
 end
 
-function printHelp()
-	server.announce("[HELP]", "?help - show this help");
-	server.announce("[HELP]", "?hire - hire new worker in to you team.");
+function printHelp(arg1)
+	if arg1 == nil then
+		server.announce("[HELP]", "?help - show this help", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?hire profession - hire new worker in to you team.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?rn old_name new_name - give a new name to your team member.", g_savedata.player.peer_id);
+	end;
+	if arg1 == "hire" or arg1 == "?hire" then
+		server.announce("[HELP]", "     - ?hire professions:", g_savedata.player.peer_id);
+		server.announce("", "     - ?hire worker. payment of $ " ..(10 * worker.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire fisher. payment of $ " ..(10 * fishing.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire military. payment of $ " ..(10 * military.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire employee. payment of $ " ..(10 * office.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire scientist. payment of $ " ..(10 * science.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire doctor. payment of $ " ..(10 * medical.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire diver. payment of $ " ..(10 * wetsuit.pay), g_savedata.player.peer_id);
+		server.announce("", "     - ?hire citizen. payment of $ " ..(10 * civilian.pay), g_savedata.player.peer_id);
+	end;
 end;
 
 function nameFromOutFit( outfit)
@@ -80,24 +94,72 @@ function outFitFromName( name )
 	if science.name == name then return science.id; end;
 	if medical.name == name then return medical.id; end;
 	if wetsuit.name == name then return wetsuit.id; end;
-	if civilian.name == name then return wetsuit.id; end;
-	return 0;
+	if civilian.name == name then return civilian.id; end;
+	return nil;
 end;
 
-function hire( arg1, arg2 )
-	local outfit = 1;
-	local name = "worker";
-	if (arg1 ~= nil and type(arg1) == "string") then name = arg1; outfit = outFitFromName; end;
-	if (arg1 ~= nil and type(arg1) == "number") then 
-		outfit = arg1; 
-		if arg2 ~= nil then 
-			name = arg2;
-		else
-			name = nameFromOutFit(outfit);
-		end;
+function hire( arg1 )
+	if arg1 == nil then 
+		printHelp("hire");
 	end;
+	local outfit = nil;
+	local worker_name = nil;
+	
+	if type(arg1) == "number" then
+		worker_name = nameFromOutFit( arg1 );
+		worker_name = outFitFromName( worker_name );
+	end;
+	
+	if type(arg1) == "string" then
+		outfit = outFitFromName( arg1 );
+		worker_name = nameFromOutFit( outfit );
+	end;
+	
+	if outfit == nil or name == nil then
+		printHelp( "hire" );
+	else
+		local player_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
+		local x,y,z = matrix.position(player_pos);
+		x = x + lx*2
+		z = z + lz*2
+		local rescuer_pos = matrix.translation(x, y, z)
+		local rescuer_id = server.spawnCharacter(rescuer_pos, outfit);
+		local worker = { name = worker_name, outfit = outfit, is_powered = true, isPlayer = false, id=rescuer_id, is_sit = false, vehicle_id = -1, seat_name= nil, pop_up=server.getMapID(), powered_time = server.getDateValue()}
+		g_savedata.workers[rescuer_id] = worker;
+		local text = worker_name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+		server.setPopup(-1, g_savedata.workers[rescuer_id].pop_up, g_savedata.workers[rescuer_id].name, true, text, 0, 1.0, 0, 5, 0, g_savedata.workers[rescuer_id].id);
+	end;
+end;
 
+function renameW(arg1, arg2)
+	if arg1 == nil or arg2 == nil then return; end;
+	local worker = nil
+	local best_ditance = 25;
+	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id)
+	for _, h in pairs(g_savedata.workers) do
+			if (arg1 == nil or (type(arg1) == "string" and h.name == arg1) or (type(arg1) == "number" and h.id == arg1)) then
+				worker_matrix, success = server.getObjectPos(h.id)
+				if (success) then
+					local distSQ = distQ(worker_matrix, player_matrix);
+					if (best_ditance == nil or best_ditance > distSQ) then
+						best_ditance = distSQ;
+						worker = h;
+					end
+				end
+			end
+	end
+	if (worker ~= nil) then
+		worker.name = arg2;
+		g_savedata.workers[worker.id] = worker;
+		local text = new_name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+		server.setPopup(-1, g_savedata.workers[worker.id].pop_up, g_savedata.workers[worker.id].name, true, text, 0, 1.0, 0, 5, 0, g_savedata.workers[worker.id].id);
+	end
+end;
 
+function distQ( m1, m2)
+	local x1, y1, z1 = matrix.position(m1);
+	local x2, y2, z2 = matrix.position(m2);
+	return ((x2 - x1)^2) + ((y2 - y1)^2) + ((z2 - z1)^2);
 end;
 
 
