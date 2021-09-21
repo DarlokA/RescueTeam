@@ -2,6 +2,7 @@ g_savedata = {
 	["player"] = { name = nil, peer_id = nil, id = -1, team_name=nil, is_sit = false, vehicle_id = -1, seat_name= nil },
 	["workers"] = {},
 	["day"] = 0,
+	["settings"] = false,
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -109,6 +110,40 @@ function onCharacterSit(object_id, vehicle_id, seat_name)
 end;
 
 function onTick(game_ticks)
+	if not g_savedata.settings then 
+		g_savedata.settings = true;
+		server.setGameSetting("third_person", true)
+		server.setGameSetting("third_person_vehicle", true)
+		server.setGameSetting("vehicle_damage", true)
+		server.setGameSetting("player_damage", true)
+		server.setGameSetting("npc_damage", true)
+		server.setGameSetting("sharks", true)
+		server.setGameSetting("fast_travel", true)
+		server.setGameSetting("teleport_vehicle", true)
+		server.setGameSetting("rogue_mode", false)
+		server.setGameSetting("auto_refuel", false)
+		server.setGameSetting("megalodon", true)
+		server.setGameSetting("map_show_players", false)
+		server.setGameSetting("map_show_vehicles", false)
+		server.setGameSetting("show_3d_waypoints", false)
+		server.setGameSetting("show_name_plates", true)
+		server.setGameSetting("infinite_money", false)
+		server.setGameSetting("settings_menu", false)
+		server.setGameSetting("unlock_all_islands", false)
+		server.setGameSetting("unlock_all_components", false)
+		server.setGameSetting("infinite_batteries", false)
+		server.setGameSetting("infinite_fuel", false)
+		server.setGameSetting("engine_overheating", true)
+		server.setGameSetting("no_clip", false)
+		server.setGameSetting("map_teleport", true)
+		server.setGameSetting("cleanup_veicle", true)
+		server.setGameSetting("vehicle_spawning", true)
+		server.setGameSetting("photo_mode", true)
+		server.setGameSetting("respawning", true)
+		server.setGameSetting("settings_menu_lock", true)
+		server.setGameSetting("despawn_on_leave", true)
+	end;
+
 	local days_survived = server.getDateValue();
 	if (days_survived > g_savedata.day) then
 		dailyPay();
@@ -160,7 +195,7 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	g_savedata.player.team_name = name.. " RS team";
 	local object_id, is_success = server.getPlayerCharacterID(peer_id);
 	g_savedata.player.id = object_id;
-	server.setGameSetting("settings_menu", true);--TODO: remove this
+	printHelp(nil);
 end
 
 function onPlayerLeave(steam_id, name, peer_id, admin, auth)
@@ -175,6 +210,7 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?rn") then renameW(arg1, arg2); end;
 	if (command == "?dismiss") then dismissW(arg1); end;
 	if (command == "?sw") then switch2W(arg1); end;
+	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
 end
 
 function isSit(object_id)
@@ -199,7 +235,8 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?hire - hire new worker in to you team. Type ?help hire for details.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?rn old_name new_name - give a new name to your team member.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?dismiss worker_name - dismiss a worker. Type ?help dismiss for details.", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id)
+		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?settings - enable settings menu in game.", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
