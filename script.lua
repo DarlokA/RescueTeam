@@ -19,6 +19,7 @@ dismiss_pay = 2000;
 second = 60;
 
 offsetType = {};
+eq_items = {};
 
 --[[local worker = { 
 	name = worker_name, 
@@ -46,6 +47,43 @@ function onCreate(is_world_create)
 	offsetType[10] = { name = "diver", pay = 100 }
 	offsetType[11] = { name = "citizen", pay = 100 }
 	--]]
+	
+	
+--Outfits
+	eq_items[0] = { name="none", ival = nil, fval = nil, pay= 0 };
+	eq_items[1] = { name="diving", ival = nil, fval = nil, pay= 0};
+	eq_items[2] = { name="firefighter", ival = nil, fval = nil, pay= 0};
+	eq_items[3] = { name="scuba", ival = nil, fval = nil, pay= 0};
+	eq_items[4] = { name="parachute", ival = 1, fval = nil, pay= 0};-- = {0 = deployed, 1 = ready}]
+	eq_items[5] = { name="arctic", ival = nil, fval = nil, pay= 0};
+	eq_items[29] = { name="hazmat", ival = nil, fval = nil, pay= 0};
+--Items
+	eq_items[6] = {  name="binoculars", ival = nil, fval = nil, pay= 0 };
+	eq_items[7] = {  name="cable", ival = nil, fval = nil, pay= 0 };
+	eq_items[8] = {  name="compass", ival = nil, fval = nil, pay= 0 };
+	eq_items[9] = {  name="defibrillator", ival = 4, fval = nil, pay= 0 };-- [int = charges]
+	eq_items[10] = { name="fire_extinguisher", ival = nil, fval = 9.0, pay= 500 };-- [float = ammo]
+	eq_items[11] = { name="first_aid", ival = 4, fval = nil, pay= 100 };-- [int = charges]
+	eq_items[12] = { name="flare", ival = 4, fval = nil, pay= 100 };-- [int = charges]
+	eq_items[13] = { name="flaregun", ival = 1, fval = nil, pay= 50 };-- [int = ammo]
+	eq_items[14] = { name="flaregun_ammo", ival = 4, fval = nil, pay= 200 };-- [int = ammo]
+	eq_items[15] = { name="flashlight", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[16] = { name="hose", ival = 0, fval = nil, pay= 0 };-- [int = {0 = hose off, 1 = hose on}]
+	eq_items[17] = { name="night_vision_binoculars", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[18] = { name="oxygen_mask", ival = nil, fval = 100.0, pay= 0 };-- [float = oxygen]
+	eq_items[19] = { name="radio", ival = 1, fval = 100.0, pay= 0 };-- [int = channel] [float = battery]
+	eq_items[20] = { name="radio_signal_locator", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[21] = { name="remote_control", ival = 1, fval = 100.0, pay= 0 };-- [int = channel] [float = battery]
+	eq_items[22] = { name="rope", ival = nil, fval = nil, pay= 0 };
+	eq_items[23] = { name="strobe_light", ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
+	eq_items[24] = { name="strobe_light_infrared", ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
+	eq_items[25] = { name="transponder", ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
+	eq_items[26] = { name="underwater_welding_torch", ival = nil, fval = 250.0, pay= 1000 };-- [float = charge]
+	eq_items[27] = { name="welding_torch", ival = nil, fval = 400.0, pay= 500 };-- [float = charge]
+	eq_items[28] = { name="coal", ival = nil, fval = nil, pay= 0 };
+	eq_items[30] = { name="radiation_detector", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+
+	
 end;
 
 function onSpawnAddonComponent(id, name, type, playlist_index)
@@ -276,6 +314,41 @@ function dismissW(arg1)
 	
 end;
 
+function GrabCharacterItems(id)
+	local items = {};
+	for i = 1, 6 do
+		local eq_id, success = server.getCharacterItem(id, i);
+		if success then 
+			items[i] = { eq_id = eq_id };
+		else
+			items[i] = { eq_id = 0 };
+		end;
+	end;
+	return items;
+end;
+
+function SetCharacterItems(id, items, need_pay)
+	local my_currency = server.getCurrency();
+	local my_research_points = server.getResearchPoints;
+	for idx, e in pairs (items) do
+		local item = eq_items[e.eq_id];
+		local ival = item.ival;
+		local fval = item.fval;
+		if (item.pay > 0 and my_currency < item.pay and need_pay) then 
+			ival = nil;
+			fval = nil;
+		end;
+		if ((item.pay > 0 and my_currency >= item.pay) or need_pay == false) then
+			if need_pay then 
+				my_currency = my_currency - item.pay; 
+				server.setCurrency(my_currency, my_research_points);
+				server.announce(g_savedata.player.team_name, "payment of the cost of new " ..item.name.. " $" ..(item.pay).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);
+			end;
+		end;
+		local is_success = server.setCharacterItem(id, idx, e.eq_id, false, ival, fval);
+	end;
+end;
+
 function switch2W(arg1)
 	local worker = nil
 	local best_ditance = 2000000;
@@ -308,6 +381,16 @@ function switch2W(arg1)
 			worker_seat_ticks = 0;
 		end;
 		local worker_matrix, success = server.getObjectPos(worker.id);
+		
+		local player_items = GrabCharacterItems(g_savedata.player.id);
+		local worker_items = GrabCharacterItems(worker.id);
+		
+		if (worker_items ~= nil) then
+			SetCharacterItems(g_savedata.player.id, worker_items, true);
+		end;
+		if (player_items ~= nil) then
+			SetCharacterItems(worker.id, player_items, false);
+		end;
 		
 		server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		server.setObjectPos(worker.id, player_matrix);
