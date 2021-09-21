@@ -13,16 +13,23 @@ tgt_worker_seat_name = nil;
 set_worker_id = -1;
 worker_seat_ticks = 0;
 
-worker = {id = 1, name="worker", pay = 100};
-fishing = {id = 2, name="fisher", pay = 150};
-swimsuit = {id = 4, name="swimmer", pay = 150};
-military = {id = 5, name="military", pay = 250};
-office = {id = 6, name="employee", pay = 100};
-police = {id = 7, name="policeman", pay = 250};
-science = {id = 8, name="scientist", pay = 500};
-medical = {id = 9, name="doctor", pay = 150};
-wetsuit = {id = 10, name="diver", pay = 150};
-civilian = {id = 11, name="citizen", pay = 100};
+offsetType = {};
+
+function onCreate(is_world_create)
+	if is_world_create then
+		offsetType[1] = { name = "worker", pay = 100 }
+		offsetType[2] = { name = "fisher", pay = 100 }
+		offsetType[3] = { name = "waiter", pay = 100 }
+		offsetType[4] = { name = "swimmer", pay = 100 }
+		offsetType[5] = { name = "military", pay = 100 }
+		offsetType[6] = { name = "office", pay = 100 }
+		offsetType[7] = { name = "police", pay = 100 }
+		offsetType[8] = { name = "scientist", pay = 100 }
+		offsetType[9] = { name = "medical", pay = 100 }
+		offsetType[10] = { name = "diver", pay = 100 }
+		offsetType[11] = { name = "citizen", pay = 100 }
+	end;
+end;
 
 function onSpawnAddonComponent(id, name, type, playlist_index)
 	
@@ -46,79 +53,77 @@ function onPlayerLeave(steam_id, name, peer_id, admin, auth)
 	
 end
 
+function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command, arg1, arg2, arg3, arg4, arg5)
+	if (command == "?help")	then printHelp(arg1); end;
+	if (command == "?hire") then 
+		hire(arg1); 
+	end;
+	if (command == "?rn") then renameW(arg1, arg2); end;
+	if (command == "?sw") then switch2W(arg1); end;
+end
+
 function printHelp(arg1)
 	if arg1 == nil then
 		server.announce("[HELP]", "?help - show this help", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?hire profession - hire new worker in to you team.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?hire - hire new worker in to you team. Type ?help hire for details.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?rn old_name new_name - give a new name to your team member.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?dismiss worker_name - dismiss a worker.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id)
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
-		server.announce("[HELP]", "     - ?hire professions:", g_savedata.player.peer_id);
-		server.announce("", "     - ?hire worker. payment of $ " ..(10 * worker.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire fisher. payment of $ " ..(10 * fishing.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire military. payment of $ " ..(10 * military.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire employee. payment of $ " ..(10 * office.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire scientist. payment of $ " ..(10 * science.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire doctor. payment of $ " ..(10 * medical.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire diver. payment of $ " ..(10 * wetsuit.pay), g_savedata.player.peer_id);
-		server.announce("", "     - ?hire citizen. payment of $ " ..(10 * civilian.pay), g_savedata.player.peer_id);
+		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
+		for i, data in pairs(offsetType) do
+			server.announce("", "- " ..data.name.. ". payment of $ " ..(10 * data.pay).. " and $" ..data.pay.. " every day.", g_savedata.player.peer_id);
+		end;
 	end;
 end;
 
-function nameFromOutFit( outfit)
-	if none.id == outFit then return none.name; end;
-	if worker.id == outFit then return worker.name; end;
-	if fishing.id == outFit then return fishing.name; end;
-	if waiter.id == outFit then return waiter.name; end;
-	if swimsuit.id == outFit then return swimsuit.name; end;
-	if military.id == outFit then return military.name; end;
-	if office.id == outFit then return office.name; end;
-	if police.id == outFit then return police.name; end;
-	if science.id == outFit then return science.name; end;
-	if medical.id == outFit then return medical.name; end;
-	if wetsuit.id == outFit then return wetsuit.name; end;
-	if civilian.id == outFit then return civilian.name; end;
+function nameFromOutFit( outfit )
+	if (outfit ~= nil) then
+		if outfit > 0 and outfit < 12 then return offsetType[outfit].name, offsetType[outfit].pay; end;
+	end;
 	return nil;
 end;
 
 
 function outFitFromName( name )
-	if none.name == name then return none.id; end;
-	if worker.name == name then return worker.id; end;
-	if fishing.name == name then return fishing.id; end;
-	if waiter.name == name then return waiter.id; end;
-	if swimsuit.name == name then return swimsuit.id; end;
-	if military.name == name then return military.id; end;
-	if office.name == name then return office.id; end;
-	if police.name == name then return police.id; end;
-	if science.name == name then return science.id; end;
-	if medical.name == name then return medical.id; end;
-	if wetsuit.name == name then return wetsuit.id; end;
-	if civilian.name == name then return civilian.id; end;
-	return nil;
+	if name ~= nil then 
+		local res = nil;
+		local pay = nil;
+		for i, data in pairs(offsetType) do
+			if (data.name == name)  then
+				return i, pay;
+			end;
+		end;
+	end;
+	return nil, nil;
 end;
 
 function hire( arg1 )
 	if arg1 == nil then 
 		printHelp("hire");
+		return;
 	end;
 	local outfit = nil;
 	local worker_name = nil;
+	local pay = 0;
 	
 	if type(arg1) == "number" then
-		worker_name = nameFromOutFit( arg1 );
-		worker_name = outFitFromName( worker_name );
+		worker_name, pay = nameFromOutFit( arg1 );
+		worker_name, pay = outFitFromName( worker_name );
 	end;
 	
 	if type(arg1) == "string" then
-		outfit = outFitFromName( arg1 );
-		worker_name = nameFromOutFit( outfit );
+		outfit, pay = outFitFromName( arg1 );
+		worker_name, pay = nameFromOutFit( outfit );
 	end;
 	
-	if outfit == nil or name == nil then
+	if outfit == nil or worker_name == nil then
 		printHelp( "hire" );
+		return;
 	else
 		local player_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
+		local lx, ly, lz, is_look = server.getPlayerLookDirection(g_savedata.player.peer_id)
 		local x,y,z = matrix.position(player_pos);
 		x = x + lx*2
 		z = z + lz*2
@@ -128,7 +133,14 @@ function hire( arg1 )
 		g_savedata.workers[rescuer_id] = worker;
 		local text = worker_name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
 		server.setPopup(-1, g_savedata.workers[rescuer_id].pop_up, g_savedata.workers[rescuer_id].name, true, text, 0, 1.0, 0, 5, 0, g_savedata.workers[rescuer_id].id);
+		local my_currency = server.getCurrency() - pay;
+		local my_research_points = server.getResearchPoints();
+		server.setCurrency(my_currency, my_research_points);
+		server.announce(g_savedata.player.team_name, "Pay for new worker $" ..pay.. ". Balance: $" ..my_currency, g_savedata.player.peer_id);		
 	end;
+end;
+
+function switch2W(arg1)
 end;
 
 function renameW(arg1, arg2)
@@ -151,9 +163,13 @@ function renameW(arg1, arg2)
 	if (worker ~= nil) then
 		worker.name = arg2;
 		g_savedata.workers[worker.id] = worker;
-		local text = new_name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+		local text = worker.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
 		server.setPopup(-1, g_savedata.workers[worker.id].pop_up, g_savedata.workers[worker.id].name, true, text, 0, 1.0, 0, 5, 0, g_savedata.workers[worker.id].id);
 	end
+end;
+
+function printD( arg1 )
+	server.announce("[debug]", arg1, g_savedata.player.peer_id);
 end;
 
 function distQ( m1, m2)
@@ -161,12 +177,3 @@ function distQ( m1, m2)
 	local x2, y2, z2 = matrix.position(m2);
 	return ((x2 - x1)^2) + ((y2 - y1)^2) + ((z2 - z1)^2);
 end;
-
-
-
-function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command, arg1, arg2, arg3, arg4, arg5)
-
-	if (command == "?help")	then printHelp(arg1); end;
-	if (commmnd == "?hire") then hire(arg1); end;
-	if (command == "?rn") then renameW(arg1, arg2); end;
-end
