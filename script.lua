@@ -1,6 +1,7 @@
 g_savedata = {
 	["player"] = { name = nil, peer_id = nil, id = -1, team_name=nil, is_sit = false, vehicle_id = -1, seat_name= nil },
 	["workers"] = {},
+	["day"] = 0,
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -70,6 +71,11 @@ function onCharacterSit(object_id, vehicle_id, seat_name)
 end;
 
 function onTick(game_ticks)
+	local days_survived = server.getDateValue();
+	if (days_survived > g_savedata.day) then
+		dailyPay();
+	end;
+	g_savedata.day = days_survived;
 	if (need_seat_player) then
 		local success, vid = isSit(g_savedata.player.id);
 		if success and (vid == tgt_player_vehicle_id) then 
@@ -271,17 +277,18 @@ function dismissW(arg1)
 end;
 
 function switch2W(arg1)
-	if arg1 == nil then return; end;
 	local worker = nil
 	local best_ditance = 2000000;
 	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id);
 	for _, h in pairs(g_savedata.workers) do
 		worker_matrix, success = server.getObjectPos(h.id)
 		if (success) then
-			local distSQ = distQ(worker_matrix, player_matrix);
-			if (best_ditance == nil or best_ditance > distSQ) then
-				best_ditance = distSQ;
-				worker = h;
+			if arg1 == nil or arg1 == h.name then
+				local distSQ = distQ(worker_matrix, player_matrix);
+				if (best_ditance == nil or best_ditance > distSQ) then
+					best_ditance = distSQ;
+					worker = h;
+				end;
 			end;
 		end;
 	end;
@@ -320,6 +327,15 @@ function switch2W(arg1)
 				need_seat_worker = false;
 			end;
 		end;
+	end;
+end;
+
+function dailyPay()
+	for _, worker in pairs(g_savedata.workers) do
+		local my_currency = server.getCurrency() - worker.pay;
+		local my_research_points = server.getResearchPoints;
+		server.setCurrency(my_currency, my_research_points);
+		server.announce(g_savedata.player.team_name, "severance pay for " ..worker.name.. " $" ..(worker.pay * 10).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);		
 	end;
 end;
 
