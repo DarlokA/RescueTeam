@@ -96,6 +96,13 @@ function onCharacterSit(object_id, vehicle_id, seat_name)
 		g_savedata.player.is_sit = true;
 		g_savedata.player.vehicle_id = vehicle_id;
 		g_savedata.player.seat_name = seat_name;
+		server.announce("[" ..g_savedata.player.name.. "]", "Sit to vehicle_id: "..g_savedata.player.vehicle_id.. ", seatName: " ..g_savedata.player.seat_name, g_savedata.player.peer_id);
+		if need_seat_player then
+			local sit, vid = isSit(g_savedata.player.id);
+			if sit then
+				need_seat_player = vid ~= tgt_player_vehicle_id;
+			end;
+		end;
 		return;
 	end;
 	
@@ -104,44 +111,55 @@ function onCharacterSit(object_id, vehicle_id, seat_name)
 			g_savedata.workers[id].is_sit = true;
 			g_savedata.workers[id].vehicle_id = vehicle_id;
 			g_savedata.workers[id].seat_name = seat_name;
+			server.announce("[" ..g_savedata.workers[id].name.. "]", "Sit to vehicle_id: "..g_savedata.workers[id].vehicle_id.. ", seatName: " ..g_savedata.workers[id].seat_name, g_savedata.player.peer_id);
+			if need_seat_worker and object_id == sit_worker_id then
+				local sit, vid = isSit(sit_worker_id);
+				if sit then
+					need_seat_worker = vid ~= tgt_worker_vehicle_id;
+				end;
+			end;
 			return;
 		end;
 	end;	
 end;
 
+function on_restore_settings()
+	server.setGameSetting("third_person", true)
+	server.setGameSetting("third_person_vehicle", true)
+	server.setGameSetting("vehicle_damage", true)
+	server.setGameSetting("player_damage", true)
+	server.setGameSetting("npc_damage", true)
+	server.setGameSetting("sharks", true)
+	server.setGameSetting("fast_travel", false)
+	server.setGameSetting("teleport_vehicle", false)
+	server.setGameSetting("rogue_mode", false)
+	server.setGameSetting("auto_refuel", false)
+	server.setGameSetting("megalodon", true)
+	server.setGameSetting("map_show_players", false)
+	server.setGameSetting("map_show_vehicles", false)
+	server.setGameSetting("show_3d_waypoints", false)
+	server.setGameSetting("show_name_plates", true)
+	server.setGameSetting("infinite_money", false)
+	server.setGameSetting("settings_menu", false)
+	server.setGameSetting("unlock_all_islands", false)
+	server.setGameSetting("unlock_all_components", false)
+	server.setGameSetting("infinite_batteries", false)
+	server.setGameSetting("infinite_fuel", false)
+	server.setGameSetting("engine_overheating", true)
+	server.setGameSetting("no_clip", true)
+	server.setGameSetting("map_teleport", false)
+	server.setGameSetting("cleanup_veicle", true)
+	server.setGameSetting("vehicle_spawning", true)
+	server.setGameSetting("photo_mode", true)
+	server.setGameSetting("respawning", true)
+	server.setGameSetting("settings_menu_lock", true)
+	server.setGameSetting("despawn_on_leave", true)
+end;
+
 function onTick(game_ticks)
-	if not g_savedata.settings then 
+	if not g_savedata.settings then
+		on_restore_settings();
 		g_savedata.settings = true;
-		server.setGameSetting("third_person", true)
-		server.setGameSetting("third_person_vehicle", true)
-		server.setGameSetting("vehicle_damage", true)
-		server.setGameSetting("player_damage", true)
-		server.setGameSetting("npc_damage", true)
-		server.setGameSetting("sharks", true)
-		server.setGameSetting("fast_travel", true)
-		server.setGameSetting("teleport_vehicle", true)
-		server.setGameSetting("rogue_mode", false)
-		server.setGameSetting("auto_refuel", false)
-		server.setGameSetting("megalodon", true)
-		server.setGameSetting("map_show_players", false)
-		server.setGameSetting("map_show_vehicles", false)
-		server.setGameSetting("show_3d_waypoints", false)
-		server.setGameSetting("show_name_plates", true)
-		server.setGameSetting("infinite_money", false)
-		server.setGameSetting("settings_menu", false)
-		server.setGameSetting("unlock_all_islands", false)
-		server.setGameSetting("unlock_all_components", false)
-		server.setGameSetting("infinite_batteries", false)
-		server.setGameSetting("infinite_fuel", false)
-		server.setGameSetting("engine_overheating", true)
-		server.setGameSetting("no_clip", false)
-		server.setGameSetting("map_teleport", true)
-		server.setGameSetting("cleanup_veicle", true)
-		server.setGameSetting("vehicle_spawning", true)
-		server.setGameSetting("photo_mode", true)
-		server.setGameSetting("respawning", true)
-		server.setGameSetting("settings_menu_lock", true)
-		server.setGameSetting("despawn_on_leave", true)
 	end;
 
 	local days_survived = server.getDateValue();
@@ -154,7 +172,13 @@ function onTick(game_ticks)
 		if success and (vid == tgt_player_vehicle_id) then 
 			need_seat_player = false;
 		end;
-		server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
+		
+		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
+		if success then
+			server.setPlayerPos(g_savedata.player.peer_id, tgt);
+			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
+		end;
+		
 		success, vid = isSit(g_savedata.player.id);
 		if success and (vid == tgt_player_vehicle_id) then 
 			need_seat_player = false;
@@ -162,7 +186,7 @@ function onTick(game_ticks)
 		if need_seat_player then 
 			player_seat_ticks = player_seat_ticks + 1;
 		end;
-		if player_seat_ticks > (2 * second) then 
+		if player_seat_ticks > (500) then 
 			player_seat_ticks = 0;
 			need_seat_player = false;
 		end;
@@ -173,7 +197,13 @@ function onTick(game_ticks)
 		if success and (vid == tgt_worker_vehicle_id) then 
 			need_seat_worker = false;
 		end;
-		server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
+		
+		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
+		if success then
+			server.setObjectPos(sit_worker_id, tgt);
+			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
+		end;
+		
 		local success, vid = isSit(sit_worker_id);
 		if success and (vid == tgt_worker_vehicle_id) then 
 			need_seat_worker = false;
@@ -182,12 +212,54 @@ function onTick(game_ticks)
 		if need_seat_worker then
 			worker_seat_ticks = worker_seat_ticks + 1;
 		end;
-		if worker_seat_ticks > (2 * second) then
+		if worker_seat_ticks > (500) then
 			worker_seat_ticks = 0;
 			need_seat_worker = false;
 		end;
 	end;
 end
+
+function TrySit(arg1, arg2, arg3)
+	if arg1 == nil and tgt_player_vehicle_id ~= nil and tgt_player_seat_name ~= nil then
+		need_seat_player = true;
+		server.announce("[" ..g_savedata.player.name.. "]", "Sit to vehicle_id: "..tgt_player_vehicle_id.. ", seatName: " ..tgt_player_seat_name, g_savedata.player.peer_id);
+		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
+		if success then
+			player_seat_ticks = 0;
+			server.setPlayerPos(g_savedata.player.peer_id, tgt);
+			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
+		end;
+		return;
+	end;
+	if (arg3 == nil) then
+		need_seat_player = true;
+		tgt_player_vehicle_id = arg1;
+		tgt_player_seat_name = arg2;
+		server.announce("[" ..g_savedata.player.name.. "]", "Sit to vehicle_id: "..tgt_player_vehicle_id.. ", seatName: " ..tgt_player_seat_name, g_savedata.player.peer_id);
+		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
+		if success then
+			player_seat_ticks = 0;
+			server.setPlayerPos(g_savedata.player.peer_id, tgt);
+			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
+		end;
+		return;
+	end;
+
+	if ( arg3 ~= nil ) then
+		need_seat_worker = true;
+		tgt_worker_vehicle_id = arg2;
+		tgt_worker_seat_name = arg3;
+		sit_worker_id = arg1;
+		server.announce("[" ..g_savedata.workers[sit_worker_id].name.. "]", "Sit to vehicle_id: "..tgt_worker_vehicle_id.. ", seatName: " ..tgt_worker_seat_name, g_savedata.player.peer_id);
+		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
+		if success then
+			worker_seat_ticks = 0;
+			server.setObjectPos(sit_worker_id, tgt);
+			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
+		end;
+		return;
+	end;
+end;
 
 function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	g_savedata.player.name = name;
@@ -211,6 +283,8 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?dismiss") then dismissW(arg1); end;
 	if (command == "?sw") then switch2W(arg1); end;
 	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
+	if (command == "?sit") then TrySit(arg1, arg2, ar3) end;
+	if (command == "?restore_settings") then on_restore_settings(); end;
 end
 
 function isSit(object_id)
@@ -237,6 +311,9 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?dismiss worker_name - dismiss a worker. Type ?help dismiss for details.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?settings - enable settings menu in game.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?sit vehicle_id seat_name - sit player to vehicle seat.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?sit worker_id vehicle_id seat_name - sit worker with id to vehicle seat.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?restore_settings - restore default addon settings.", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -388,7 +465,7 @@ end;
 
 function switch2W(arg1)
 	local worker = nil
-	local best_ditance = 2000000;
+	local best_ditance = nil;
 	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id);
 	for _, h in pairs(g_savedata.workers) do
 		worker_matrix, success = server.getObjectPos(h.id)
@@ -407,6 +484,7 @@ function switch2W(arg1)
 		if (need_seat_player) then
 			tgt_player_vehicle_id = worker.vehicle_id;
 			tgt_player_seat_name = worker.seat_name;
+			server.announce("[" ..g_savedata.player.name.. "]", "Sit to vehicle_id: "..tgt_player_vehicle_id.. ", seatName: " ..tgt_player_seat_name, g_savedata.player.peer_id);
 			player_seat_ticks = 0;
 		end;
 
@@ -415,6 +493,7 @@ function switch2W(arg1)
 			tgt_worker_vehicle_id = g_savedata.player.vehicle_id;
 			tgt_worker_seat_name = g_savedata.player.seat_name;
 			sit_worker_id = worker.id;
+			server.announce("[" ..worker.name.. "]", "Sit to vehicle_id: "..tgt_worker_vehicle_id.. ", seatName: " ..tgt_worker_seat_name, g_savedata.player.peer_id);
 			worker_seat_ticks = 0;
 		end;
 		local worker_matrix, success = server.getObjectPos(worker.id);
@@ -434,23 +513,29 @@ function switch2W(arg1)
 			SetCharacterItems(worker.id, player_items, false);
 		end;
 		
-		server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		server.setObjectPos(worker.id, player_matrix);
+		server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		
 		if (need_seat_player) then
+			server.setObjectPos(worker.id, player_matrix);
 			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
 			local success, vid = isSit(g_savedata.player.id);
 			if success and (vid == tgt_player_vehicle_id) then 
 				need_seat_player = false;
 			end;
+		else
+			server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		end;
 		
 		if (need_seat_worker) then
+			server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
 			local success, vid = isSit(sit_worker_id);
 			if success and (vid == tgt_worker_vehicle_id) then 
 				need_seat_worker = false;
 			end;
+		else
+			server.setObjectPos(worker.id, player_matrix);
 		end;
 	end;
 end;
@@ -460,7 +545,7 @@ function dailyPay()
 		local my_currency = server.getCurrency() - worker.pay;
 		local my_research_points = server.getResearchPoints;
 		server.setCurrency(my_currency, my_research_points);
-		server.announce(g_savedata.player.team_name, "severance pay for " ..worker.name.. " $" ..(worker.pay * 10).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);		
+		server.announce(g_savedata.player.team_name, "daly payment for " ..worker.name.. " $" ..(worker.pay).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);		
 	end;
 end;
 
