@@ -419,8 +419,13 @@ function switch2W(arg1)
 		end;
 		local worker_matrix, success = server.getObjectPos(worker.id);
 		
+		local my_data = server.getCharacterData(g_savedata.player.id);
+		local w_data = server.getCharacterData(worker.id);
 		local player_items = GrabCharacterItems(g_savedata.player.id);
 		local worker_items = GrabCharacterItems(worker.id);
+		
+		server.setCharacterData(g_savedata.player.id, w_data.hp, true, true);
+		server.setCharacterData(worker.id, my_data.hp, true, true);
 		
 		if (worker_items ~= nil) then
 			SetCharacterItems(g_savedata.player.id, worker_items, true);
