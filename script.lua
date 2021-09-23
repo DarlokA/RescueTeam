@@ -375,6 +375,11 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	local object_id, is_success = server.getPlayerCharacterID(peer_id);
 	g_savedata.player.id = object_id;
 	printHelp(nil);
+	for _, worker in pairs(g_savedata.workers) do
+		local text = worker.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+		server.setPopup(-1, g_savedata.workers[worker.id].pop_up, g_savedata.workers[worker.id].name, true, text, 0, 1.0, 0, 5, 0, g_savedata.workers[worker.id].id);
+	end
+	
 end
 
 function onPlayerLeave(steam_id, name, peer_id, admin, auth)
@@ -532,7 +537,7 @@ end;
 
 function SetCharacterItems(id, items, need_pay)
 	local my_currency = server.getCurrency();
-	local my_research_points = server.getResearchPoints;
+	local my_research_points = server.getResearchPoints();
 	for idx, e in pairs (items) do
 		local item = eq_items[e.eq_id];
 		local ival = item.ival;
@@ -637,7 +642,7 @@ end;
 function dailyPay()
 	for _, worker in pairs(g_savedata.workers) do
 		local my_currency = server.getCurrency() - worker.pay;
-		local my_research_points = server.getResearchPoints;
+		local my_research_points = server.getResearchPoints();
 		server.setCurrency(my_currency, my_research_points);
 		server.announce(g_savedata.player.team_name, "daly payment for " ..worker.name.. " $" ..(worker.pay).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);		
 	end;
