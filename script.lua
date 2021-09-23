@@ -129,7 +129,7 @@ function checkSit()
 		local player_matrix, success = server.getPlayerPos(g_savedata.player.peer_id);
 		local id_matrinx, success = server.getObjectPos(g_savedata.player.id);
 		local distSQ = distQ(id_matrinx, player_matrix);
-		if distSQ < 25 then
+		if distSQ < 2 then
 			local sit, vid = isSimulatedSit(g_savedata.player.id);
 			g_savedata.player.is_sit = sit;
 			if not sit then
@@ -147,7 +147,7 @@ function checkSit()
 					worker_matrix, success = server.getObjectPos(h.id)
 					if (success) then
 						local distSQ = distQ(worker_matrix, player_matrix);
-						if (distSQ <= 25) then
+						if (distSQ <= 2) then
 							local sit, vid = isSimulatedSit(id);
 							g_savedata.workers[id].is_sit = sit;
 							--printD("On Worker UNSIT");
@@ -170,7 +170,7 @@ function checkSit()
 							worker_matrix, success = server.getObjectPos(h.id)
 							if (success) then
 								local distSQ = distQ(worker_matrix, player_matrix);
-								if (distSQ <= 25) then
+								if (distSQ <= 2) then
 									local sit, vid = isSimulatedSit(id);
 									g_savedata.workers[id].is_sit = sit;
 									--printD("On Worker UNSIT");
@@ -616,6 +616,13 @@ function switch2W(arg1)
 		
 		server.setObjectPos(worker.id, player_matrix);
 		server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
+		g_savedata.workers[worker.id].is_sit = false;
+		g_savedata.workers[worker.id].seat_name = nil;
+		g_savedata.workers[worker.id].vehicle_id = -1;
+		g_savedata.player.is_sit = false;
+		g_savedata.player.vehicle_id = -1;
+		g_savedata.player.seat_name = nil;
+		
 		
 		if (need_seat_player) then
 			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
