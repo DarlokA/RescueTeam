@@ -19,6 +19,8 @@ dismiss_pay = 2000;
 
 second = 60;
 
+vihicles = {};
+
 offsetType = {};
 eq_items = {};
 
@@ -91,8 +93,102 @@ function onSpawnAddonComponent(id, name, type, playlist_index)
 	
 end;
 
+function isSit(object_id)
+	if g_savedata.player.id == object_id then
+		return g_savedata.player.is_sit, g_savedata.player.vehicle_id;
+	end;
+	local h = g_savedata.workers[object_id];
+	if h ~= nil then
+		return h.is_sit, h.vehicle_id;
+	end;
+	return false, nil;
+end;
+
+function isSimulatedSit(object_id)
+	local vehicle_id, is_success = server.getCharacterVehicle(object_id)
+	if (is_success) then
+		local vdata, is_success = server.getVehicleData(vehicle_id)
+		if (is_success) then
+			for _, id in pairs(vdata.characters) do
+				if (object_id == id) then
+					return true, vehicle_id;
+				end
+			end
+		end
+	end
+	return false, nil
+end
+
+
+function checkSit()
+	if need_seat_player then 
+		return; 
+	end;
+	
+	if g_savedata.player.is_sit then
+		local player_matrix, success = server.getPlayerPos(g_savedata.player.peer_id);
+		local id_matrinx, success = server.getObjectPos(g_savedata.player.id);
+		local distSQ = distQ(id_matrinx, player_matrix);
+		if distSQ < 25 then
+			local sit, vid = isSimulatedSit(g_savedata.player.id);
+			g_savedata.player.is_sit = sit;
+			if not sit then
+				--printD("On Player UNSIT");
+			end;
+		end;
+	end;
+	
+	for id, h in pairs(g_savedata.workers) do
+		if id == sit_worker_id and need_seat_worker then
+			local is_simulating, is_success = server.getVehicleSimulating(tgt_worker_vehicle_id);
+			if is_simulating and is_success then
+				local player_matrix, success = server.getPlayerPos(g_savedata.player.peer_id);
+				if success then
+					worker_matrix, success = server.getObjectPos(h.id)
+					if (success) then
+						local distSQ = distQ(worker_matrix, player_matrix);
+						if (distSQ <= 25) then
+							local sit, vid = isSimulatedSit(id);
+							g_savedata.workers[id].is_sit = sit;
+							--printD("On Worker UNSIT");
+						end;
+					end;
+				end;
+			else
+				onCharacterSit(id, tgt_worker_vehicle_id, tgt_worker_seat_name);
+			end;
+		else
+			if h.is_sit then
+				local is_simulating, is_success = server.getVehicleSimulating(h.vehicle_id);
+				if not is_success then 
+					g_savedata.workers[id].is_sit = false; 
+					--printD("On Worker UNSIT reason not worker vehicle");
+				else
+					if is_simulating then
+						local player_matrix, success = server.getPlayerPos(g_savedata.player.peer_id);
+						if success then
+							worker_matrix, success = server.getObjectPos(h.id)
+							if (success) then
+								local distSQ = distQ(worker_matrix, player_matrix);
+								if (distSQ <= 25) then
+									local sit, vid = isSimulatedSit(id);
+									g_savedata.workers[id].is_sit = sit;
+									--printD("On Worker UNSIT");
+								end;
+							end;
+						end;
+					end;
+				end;
+			end;
+		end;
+	end;
+	
+end;
+
+
 function onCharacterSit(object_id, vehicle_id, seat_name)
 	if object_id == g_savedata.player.id then
+		--printD("On Player SIT to " ..vehicle_id.. " " ..seat_name);
 		g_savedata.player.is_sit = true;
 		g_savedata.player.vehicle_id = vehicle_id;
 		g_savedata.player.seat_name = seat_name;
@@ -108,6 +204,7 @@ function onCharacterSit(object_id, vehicle_id, seat_name)
 	
 	for id, h in pairs(g_savedata.workers) do
 		if id == object_id then
+			--printD("On Worker " ..id.. " SIT to " ..vehicle_id.. " " ..seat_name);
 			g_savedata.workers[id].is_sit = true;
 			g_savedata.workers[id].vehicle_id = vehicle_id;
 			g_savedata.workers[id].seat_name = seat_name;
@@ -156,6 +253,103 @@ function on_restore_settings()
 	server.setGameSetting("despawn_on_leave", true)
 end;
 
+function onVehicleUnload(vehicle_id)
+	
+end;
+
+function onVehicleLoad(vehicle_id)
+	if need_seat_player and vehicle_id == tgt_player_vehicle_id then
+		tryingSitPlayer();
+	end;
+	if need_seat_worker and vehicle_id == tgt_worker_vehicle_id then
+		tryingSitWorker();
+	end;
+end;
+
+function tryingSitPlayer()
+	if (need_seat_player) then
+		local is_simulating, is_success = server.getVehicleSimulating(tgt_player_vehicle_id);
+		if not is_simulating then
+			local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
+			if success then
+				local tx, ty, tz = matrix.position(tgt);
+				tgt = matrix.translation(tx, ty+20, tz);
+				server.setPlayerPos(g_savedata.player.peer_id, tgt);			
+			end;
+			return; 
+		end;
+		if not is_success then need_seat_player = false; end;
+		local success, vid = isSit(g_savedata.player.id);
+		if success and (vid == tgt_player_vehicle_id) then 
+			need_seat_player = false;
+		end;
+		
+		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
+		if success then
+			local tx, ty, tz = matrix.position(tgt);
+			tgt = matrix.translation(tx, ty+20, tz);
+			server.setPlayerPos(g_savedata.player.peer_id, tgt);
+			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
+		end;
+		
+		success, vid = isSit(g_savedata.player.id);
+		if success and (vid == tgt_player_vehicle_id) then 
+			need_seat_player = false;
+		end;
+		local is_simulating, is_success = server.getVehicleSimulating(tgt_player_vehicle_id);
+		if not is_success then need_seat_player = false; end;
+		if need_seat_player then 
+			player_seat_ticks = player_seat_ticks + 1;
+		end;
+		if is_simulating and player_seat_ticks > 1200 then 
+			player_seat_ticks = 0;
+			need_seat_player = false;
+		end;
+	end;
+end;
+
+function tryingSitWorker()
+	if (need_seat_worker) then
+		local is_simulating, is_success = server.getVehicleSimulating(tgt_worker_vehicle_id);
+		if not is_success then need_seat_worker = false; end;
+		if not is_simulating then
+			local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
+			if success then
+				local tx, ty, tz = matrix.position(tgt);
+				tgt = matrix.translation(tx, ty+20, tz);
+				server.setObjectPos(sit_worker_id, tgt);
+			end;
+			return; 
+		end;
+		local success, vid = isSit(sit_worker_id);
+		if success and (vid == tgt_worker_vehicle_id) then 
+			need_seat_worker = false;
+		end;
+		
+		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
+		if success then
+			local tx, ty, tz = matrix.position(tgt);
+			tgt = matrix.translation(tx, ty+2, tz);
+			server.setObjectPos(sit_worker_id, tgt);
+			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
+		end;
+		
+		local success, vid = isSit(sit_worker_id);
+		if success and (vid == tgt_worker_vehicle_id) then 
+			need_seat_worker = false;
+		end;
+		
+		if not is_success then need_seat_worker = false; end;
+		if need_seat_worker then
+			worker_seat_ticks = worker_seat_ticks + 1;
+		end;
+		if is_simulating and worker_seat_ticks > 1200 then
+			worker_seat_ticks = 0;
+			need_seat_worker = false;
+		end;
+	end;
+end;
+
 function onTick(game_ticks)
 	if not g_savedata.settings then
 		on_restore_settings();
@@ -167,103 +361,12 @@ function onTick(game_ticks)
 		dailyPay();
 	end;
 	g_savedata.day = days_survived;
-	if (need_seat_player) then
-		local success, vid = isSit(g_savedata.player.id);
-		if success and (vid == tgt_player_vehicle_id) then 
-			need_seat_player = false;
-		end;
-		
-		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
-		if success then
-			local tx, ty, tz = matrix.position(tgt);
-			tgt = matrix.translation(tx, ty+2, tz);
-			server.setPlayerPos(g_savedata.player.peer_id, tgt);
-			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
-		end;
-		
-		success, vid = isSit(g_savedata.player.id);
-		if success and (vid == tgt_player_vehicle_id) then 
-			need_seat_player = false;
-		end;
-		if need_seat_player then 
-			player_seat_ticks = player_seat_ticks + 1;
-		end;
-		if player_seat_ticks > (500) then 
-			player_seat_ticks = 0;
-			need_seat_player = false;
-		end;
-	end;
-	
-	if (need_seat_worker) then
-		local success, vid = isSit(sit_worker_id);
-		if success and (vid == tgt_worker_vehicle_id) then 
-			need_seat_worker = false;
-		end;
-		
-		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
-		if success then
-			local tx, ty, tz = matrix.position(tgt);
-			tgt = matrix.translation(tx, ty+2, tz);
-			server.setObjectPos(sit_worker_id, tgt);
-			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
-		end;
-		
-		local success, vid = isSit(sit_worker_id);
-		if success and (vid == tgt_worker_vehicle_id) then 
-			need_seat_worker = false;
-		end;
-		
-		if need_seat_worker then
-			worker_seat_ticks = worker_seat_ticks + 1;
-		end;
-		if worker_seat_ticks > (500) then
-			worker_seat_ticks = 0;
-			need_seat_worker = false;
-		end;
-	end;
+	checkSit();
+	tryingSitPlayer();
+	tryingSitWorker();
 end
 
-function TrySit(arg1, arg2, arg3)
-	if arg1 == nil and tgt_player_vehicle_id ~= nil and tgt_player_seat_name ~= nil then
-		need_seat_player = true;
-		--server.announce("[" ..g_savedata.player.name.. "]", "Sit to vehicle_id: "..tgt_player_vehicle_id.. ", seatName: " ..tgt_player_seat_name, g_savedata.player.peer_id);
-		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
-		if success then
-			player_seat_ticks = 0;
-			server.setPlayerPos(g_savedata.player.peer_id, tgt);
-			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
-		end;
-		return;
-	end;
-	if (arg3 == nil) then
-		need_seat_player = true;
-		tgt_player_vehicle_id = arg1;
-		tgt_player_seat_name = arg2;
-		--server.announce("[" ..g_savedata.player.name.. "]", "Sit to vehicle_id: "..tgt_player_vehicle_id.. ", seatName: " ..tgt_player_seat_name, g_savedata.player.peer_id);
-		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
-		if success then
-			player_seat_ticks = 0;
-			server.setPlayerPos(g_savedata.player.peer_id, tgt);
-			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
-		end;
-		return;
-	end;
 
-	if ( arg3 ~= nil ) then
-		need_seat_worker = true;
-		tgt_worker_vehicle_id = arg2;
-		tgt_worker_seat_name = arg3;
-		sit_worker_id = arg1;
-		--server.announce("[" ..g_savedata.workers[sit_worker_id].name.. "]", "Sit to vehicle_id: "..tgt_worker_vehicle_id.. ", seatName: " ..tgt_worker_seat_name, g_savedata.player.peer_id);
-		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
-		if success then
-			worker_seat_ticks = 0;
-			server.setObjectPos(sit_worker_id, tgt);
-			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
-		end;
-		return;
-	end;
-end;
 
 function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	g_savedata.player.name = name;
@@ -287,23 +390,7 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?dismiss") then dismissW(arg1); end;
 	if (command == "?sw") then switch2W(arg1); end;
 	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
-	if (command == "?sit") then TrySit(arg1, arg2, ar3) end;
 	if (command == "?restore_settings") then on_restore_settings(); end;
-end
-
-function isSit(object_id)
-	local vehicle_id, is_success = server.getCharacterVehicle(object_id)
-	if (is_success) then
-		local vdata, is_success = server.getVehicleData(vehicle_id)
-		if (is_success) then
-			for _, id in pairs(vdata.characters) do
-				if (object_id == id) then
-					return true, vehicle_id
-				end
-			end
-		end
-	end
-	return false, nil
 end
 
 
@@ -315,8 +402,6 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?dismiss worker_name - dismiss a worker. Type ?help dismiss for details.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?settings - enable settings menu in game.", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?sit vehicle_id seat_name - sit player to vehicle seat.", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?sit worker_id vehicle_id seat_name - sit worker with id to vehicle seat.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?restore_settings - restore default addon settings.", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
@@ -534,14 +619,10 @@ function switch2W(arg1)
 		
 		if (need_seat_player) then
 			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
-		else
-			server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		end;
 		
 		if (need_seat_worker) then
 			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
-		else
-			server.setObjectPos(worker.id, player_matrix);
 		end;
 	end;
 end;
