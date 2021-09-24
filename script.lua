@@ -3,6 +3,7 @@ g_savedata = {
 	["workers"] = {},
 	["day"] = 0,
 	["settings"] = false,
+	["vihicles"] = {},
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -19,10 +20,11 @@ dismiss_pay = 2000;
 
 second = 60;
 
-vihicles = {};
-
 offsetType = {};
 eq_items = {};
+
+--g_savedata.vihicles[vehicle_id] = { name = name, transform, dx = 0, dy = 0, dz= 0, ticks = 0 };
+
 
 --[[local worker = { 
 	name = worker_name, 
@@ -253,16 +255,60 @@ function on_restore_settings()
 	server.setGameSetting("despawn_on_leave", true)
 end;
 
+function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost) 
+	if (peer_id == g_savedata.player.peer_id) then
+		local name, is_success = server.getVehicleName(vehicle_id);
+		if is_success then
+			local pos = matrix.translation(x, y, z);
+			g_savedata.vihicles[vehicle_id] = { name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED" };
+		end;
+	end;
+end;
+
+function onVehicleDespawn(vehicle_id, peer_id)
+	g_savedata.vihicles[vehicle_id] = nil;
+end;
+
 function onVehicleUnload(vehicle_id)
-	
+	local vehicle = g_savedata.vihicles[vehicle_id];
+	if vehicle ~= nil then
+		vehicle.state = "AI_TRAFFIC";
+	end;
 end;
 
 function onVehicleLoad(vehicle_id)
+	local vehicle = g_savedata.vihicles[vehicle_id];
+	if vehicle ~= nil then
+		vehicle.state = "SIMULATED";
+	end;
+	
 	if need_seat_player and vehicle_id == tgt_player_vehicle_id then
 		tryingSitPlayer();
 	end;
 	if need_seat_worker and vehicle_id == tgt_worker_vehicle_id then
 		tryingSitWorker();
+	end;
+end;
+
+function Traffic()
+	for vehicle_id, vehicle in pairs (g_savedata.vihicles) do
+		local pos_matrix, is_success = server.getVehiclePos(vehicle_id);
+		local x1, y1, z1 = matrix.position(vehicle.transform);
+		local x2, y2, z2 = matrix.position(pos_matrix);
+		if vehicle.state == "AI_TRAFFIC" then
+			x2 = x1 + vehicle.dx;
+			y2 = y1;
+			z2 = z1 + vehicle.dz;
+			pos_matrix = matrix.translation(x2, y2, z2);
+			g_savedata.vihicles[vehicle_id].transform = pos_matrix;
+			server.setVehiclePos(vehicle_id, pos_matrix);
+		end;
+		if vehicle.state == "SIMULATED" then
+			g_savedata.vihicles[vehicle_id].dx = x2 - x1;
+			g_savedata.vihicles[vehicle_id].dy = y2 - y1;
+			g_savedata.vihicles[vehicle_id].dz = z2 - z1;
+			g_savedata.vihicles[vehicle_id].transform = pos_matrix;
+		end;
 	end;
 end;
 
@@ -364,6 +410,7 @@ function onTick(game_ticks)
 	checkSit();
 	tryingSitPlayer();
 	tryingSitWorker();
+	Traffic();
 end
 
 
