@@ -3,7 +3,7 @@ g_savedata = {
 	["workers"] = {},
 	["day"] = 0,
 	["settings"] = false,
-	["vihicles"] = {},
+	["vehicles"] = {},
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -23,7 +23,7 @@ second = 60;
 offsetType = {};
 eq_items = {};
 
---g_savedata.vihicles[vehicle_id] = { name = name, transform, dx = 0, dy = 0, dz= 0, ticks = 0 };
+--g_savedata.vehicles[vehicle_id] = { name = name, transform, dx = 0, dy = 0, dz= 0, ticks = 0 };
 
 
 --[[local worker = { 
@@ -260,24 +260,24 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		local name, is_success = server.getVehicleName(vehicle_id);
 		if is_success then
 			local pos = matrix.translation(x, y, z);
-			g_savedata.vihicles[vehicle_id] = { name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED" };
+			g_savedata.vehicles[vehicle_id] = { name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED" };
 		end;
 	end;
 end;
 
 function onVehicleDespawn(vehicle_id, peer_id)
-	g_savedata.vihicles[vehicle_id] = nil;
+	g_savedata.vehicles[vehicle_id] = nil;
 end;
 
 function onVehicleUnload(vehicle_id)
-	local vehicle = g_savedata.vihicles[vehicle_id];
+	local vehicle = g_savedata.vehicles[vehicle_id];
 	if vehicle ~= nil then
 		vehicle.state = "AI_TRAFFIC";
 	end;
 end;
 
 function onVehicleLoad(vehicle_id)
-	local vehicle = g_savedata.vihicles[vehicle_id];
+	local vehicle = g_savedata.vehicles[vehicle_id];
 	if vehicle ~= nil then
 		vehicle.state = "SIMULATED";
 	end;
@@ -291,23 +291,23 @@ function onVehicleLoad(vehicle_id)
 end;
 
 function Traffic()
-	for vehicle_id, vehicle in pairs (g_savedata.vihicles) do
+	for vehicle_id, vehicle in pairs (g_savedata.vehicles) do
 		local pos_matrix, is_success = server.getVehiclePos(vehicle_id);
 		local x1, y1, z1 = matrix.position(vehicle.transform);
 		local x2, y2, z2 = matrix.position(pos_matrix);
 		if vehicle.state == "AI_TRAFFIC" then
-			x2 = x1 + vehicle.dx;
-			y2 = y1;
-			z2 = z1 + vehicle.dz;
-			pos_matrix = matrix.translation(x2, y2, z2);
-			g_savedata.vihicles[vehicle_id].transform = pos_matrix;
-			server.setVehiclePos(vehicle_id, pos_matrix);
+			--x2 = x1 + vehicle.dx;
+			--y2 = y1;
+			--z2 = z1 + vehicle.dz;
+			--pos_matrix = matrix.translation(x2, y2, z2);
+			--g_savedata.vehicles[vehicle_id].transform = pos_matrix;
+			--server.setVehiclePos(vehicle_id, pos_matrix);
 		end;
 		if vehicle.state == "SIMULATED" then
-			g_savedata.vihicles[vehicle_id].dx = x2 - x1;
-			g_savedata.vihicles[vehicle_id].dy = y2 - y1;
-			g_savedata.vihicles[vehicle_id].dz = z2 - z1;
-			g_savedata.vihicles[vehicle_id].transform = pos_matrix;
+			g_savedata.vehicles[vehicle_id].dx = x2 - x1;
+			g_savedata.vehicles[vehicle_id].dy = y2 - y1;
+			g_savedata.vehicles[vehicle_id].dz = z2 - z1;
+			g_savedata.vehicles[vehicle_id].transform = pos_matrix;
 		end;
 	end;
 end;
