@@ -55,38 +55,38 @@ function onCreate(is_world_create)
 	
 	
 --Outfits
-	eq_items[0] = { name="none", ival = nil, fval = nil, pay= 0 };
-	eq_items[1] = { name="diving", ival = nil, fval = nil, pay= 0};
-	eq_items[2] = { name="firefighter", ival = nil, fval = nil, pay= 0};
-	eq_items[3] = { name="scuba", ival = nil, fval = nil, pay= 0};
-	eq_items[4] = { name="parachute", ival = 1, fval = nil, pay= 0};-- = {0 = deployed, 1 = ready}]
-	eq_items[5] = { name="arctic", ival = nil, fval = nil, pay= 0};
-	eq_items[29] = { name="hazmat", ival = nil, fval = nil, pay= 0};
+	eq_items[0] = { name="none", active = false, ival = nil, fval = nil, pay= 0 };
+	eq_items[1] = { name="diving", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[2] = { name="firefighter", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[3] = { name="scuba", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[4] = { name="parachute", active = false,  ival = 1, fval = nil, pay= 0};-- = {0 = deployed, 1 = ready}]
+	eq_items[5] = { name="arctic", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[29] = { name="hazmat", active = false,  ival = nil, fval = nil, pay= 0};
 --Items
-	eq_items[6] = {  name="binoculars", ival = nil, fval = nil, pay= 0 };
-	eq_items[7] = {  name="cable", ival = nil, fval = nil, pay= 0 };
-	eq_items[8] = {  name="compass", ival = nil, fval = nil, pay= 0 };
-	eq_items[9] = {  name="defibrillator", ival = 4, fval = nil, pay= 0 };-- [int = charges]
-	eq_items[10] = { name="fire_extinguisher", ival = nil, fval = 9.0, pay= 500 };-- [float = ammo]
-	eq_items[11] = { name="first_aid", ival = 4, fval = nil, pay= 100 };-- [int = charges]
-	eq_items[12] = { name="flare", ival = 4, fval = nil, pay= 100 };-- [int = charges]
-	eq_items[13] = { name="flaregun", ival = 1, fval = nil, pay= 50 };-- [int = ammo]
-	eq_items[14] = { name="flaregun_ammo", ival = 4, fval = nil, pay= 200 };-- [int = ammo]
-	eq_items[15] = { name="flashlight", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
-	eq_items[16] = { name="hose", ival = 0, fval = nil, pay= 0 };-- [int = {0 = hose off, 1 = hose on}]
-	eq_items[17] = { name="night_vision_binoculars", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
-	eq_items[18] = { name="oxygen_mask", ival = nil, fval = 100.0, pay= 0 };-- [float = oxygen]
-	eq_items[19] = { name="radio", ival = 1, fval = 100.0, pay= 0 };-- [int = channel] [float = battery]
-	eq_items[20] = { name="radio_signal_locator", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
-	eq_items[21] = { name="remote_control", ival = 1, fval = 100.0, pay= 0 };-- [int = channel] [float = battery]
-	eq_items[22] = { name="rope", ival = nil, fval = nil, pay= 0 };
-	eq_items[23] = { name="strobe_light", ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
-	eq_items[24] = { name="strobe_light_infrared", ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
-	eq_items[25] = { name="transponder", ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
-	eq_items[26] = { name="underwater_welding_torch", ival = nil, fval = 250.0, pay= 1000 };-- [float = charge]
-	eq_items[27] = { name="welding_torch", ival = nil, fval = 400.0, pay= 500 };-- [float = charge]
-	eq_items[28] = { name="coal", ival = nil, fval = nil, pay= 0 };
-	eq_items[30] = { name="radiation_detector", ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[6] = {  name="binoculars", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[7] = {  name="cable", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[8] = {  name="compass", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[9] = {  name="defibrillator", active = false,  ival = 4, fval = nil, pay= 0 };-- [int = charges]
+	eq_items[10] = { name="fire_extinguisher", active = false,  ival = nil, fval = 9.0, pay= 500 };-- [float = ammo]
+	eq_items[11] = { name="first_aid", active = false,  ival = 4, fval = nil, pay= 100 };-- [int = charges]
+	eq_items[12] = { name="flare", active = true,  ival = 4, fval = nil, pay= 100 };-- [int = charges]
+	eq_items[13] = { name="flaregun", active = false,  ival = 1, fval = nil, pay= 50 };-- [int = ammo]
+	eq_items[14] = { name="flaregun_ammo", active = false,  ival = 4, fval = nil, pay= 200 };-- [int = ammo]
+	eq_items[15] = { name="flashlight", active = false,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[16] = { name="hose", active = false,  ival = 0, fval = nil, pay= 0 };-- [int = {0 = hose off, 1 = hose on}]
+	eq_items[17] = { name="night_vision_binoculars", active = false,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[18] = { name="oxygen_mask", active = false,  ival = nil, fval = 100.0, pay= 0 };-- [float = oxygen]
+	eq_items[19] = { name="radio", active = true,  ival = 0, fval = 100.0, pay= 0 };-- [int = channel] [float = battery]
+	eq_items[20] = { name="radio_signal_locator", active = false,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	eq_items[21] = { name="remote_control", active = false,  ival = 1, fval = 100.0, pay= 0 };-- [int = channel] [float = battery]
+	eq_items[22] = { name="rope", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[23] = { name="strobe_light", active = true,  ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
+	eq_items[24] = { name="strobe_light_infrared", active = true,  ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
+	eq_items[25] = { name="transponder", active = true,  ival = 0, fval = 100.0, pay= 0 };-- [int = {0 = off, 1 = on}] [float = battery]
+	eq_items[26] = { name="underwater_welding_torch", active = false,  ival = nil, fval = 250.0, pay= 1000 };-- [float = charge]
+	eq_items[27] = { name="welding_torch", active = false,  ival = nil, fval = 400.0, pay= 500 };-- [float = charge]
+	eq_items[28] = { name="coal", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[30] = { name="radiation_detector", active = true,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
 
 	
 end;
@@ -443,6 +443,7 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?sw") then switch2W(arg1); end;
 	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
 	if (command == "?restore_settings") then on_restore_settings(); end;
+	if (command == "?activate_items") then ativate_items(arg1, arg2); end;
 end
 
 
@@ -455,6 +456,7 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?settings - enable settings menu in game.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?restore_settings - restore default addon settings.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?activate_items worker_name [idx]- activate character item. No idx - all items.");
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -582,7 +584,7 @@ function GrabCharacterItems(id)
 	return items;
 end;
 
-function SetCharacterItems(id, items, need_pay)
+function SetCharacterItems(id, items, need_pay, activate, activate_idx)
 	local my_currency = server.getCurrency();
 	local my_research_points = server.getResearchPoints();
 	for idx, e in pairs (items) do
@@ -600,7 +602,39 @@ function SetCharacterItems(id, items, need_pay)
 				server.announce(g_savedata.player.team_name, "payment of the cost of new " ..item.name.. " $" ..(item.pay).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);
 			end;
 		end;
-		local is_success = server.setCharacterItem(id, idx, e.eq_id, false, ival, fval);
+		if activate == nil or activate = false then 
+			local is_success = server.setCharacterItem(id, idx, e.eq_id, false, ival, fval);
+		else
+			local activate = item.active;
+			if activate_idx ~= nil and activate_idx ~= idx then activate = false; end;
+			if activate_idx ~= nil and activate_idx == idx then activate = true; end;
+			local is_success = server.setCharacterItem(id, idx, e.eq_id, activate, ival, fval);
+		end;
+			
+	end;
+end;
+
+function ativate_items(arg1, arg2);
+	local worker = nil
+	local best_ditance = nil;
+	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id);
+	for _, h in pairs(g_savedata.workers) do
+		worker_matrix, success = server.getObjectPos(h.id)
+		if (success) then
+			if arg1 == nil or arg1 == h.name then
+				local distSQ = distQ(worker_matrix, player_matrix);
+				if (best_ditance == nil or best_ditance > distSQ) then
+					best_ditance = distSQ;
+					worker = h;
+				end;
+			end;
+		end;
+	end;
+	if worker ~= nil then
+		local worker_items = GrabCharacterItems(worker.id);
+		SetCharacterItems(worker.id, worker_items, false, true, arg2);
+	else
+		server.announce("[NO WORKER FOUNDED]", "?activate_items worker_name [idx]- activate character item. No idx - all items.");
 	end;
 end;
 
@@ -648,10 +682,10 @@ function switch2W(arg1)
 		server.setCharacterData(worker.id, my_data.hp, true, true);
 		
 		if (worker_items ~= nil) then
-			SetCharacterItems(g_savedata.player.id, worker_items, true);
+			SetCharacterItems(g_savedata.player.id, worker_items, true, false);
 		end;
 		if (player_items ~= nil) then
-			SetCharacterItems(worker.id, player_items, false);
+			SetCharacterItems(worker.id, player_items, false, false);
 		end;
 		
 		local px, py, pz = matrix.position(player_matrix);
