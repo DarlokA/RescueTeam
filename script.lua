@@ -1,5 +1,5 @@
 g_savedata = {
-	["player"] = { name = nil, peer_id = nil, id = -1, team_name=nil, is_sit = false, vehicle_id = -1, seat_name= nil },
+	["player"] = { name = nil, peer_id = nil, id = -1, team_name=nil, is_sit = false, vehicle_id = -1, seat_name= nil, map_marker = nil },
 	["workers"] = {},
 	["day"] = 0,
 	["settings"] = false,
@@ -89,6 +89,65 @@ function onCreate(is_world_create)
 	eq_items[30] = { name="radiation_detector", active = true,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
 
 	
+end;
+
+function onToggleMap(peer_id, is_open)
+	local is_settings = server.getGameSettings()["settings_menu"];
+	if not is_settings then
+		if is_open then--open map
+			for i = 2, 5 do
+				local eq_id, success = server.getCharacterItem(g_savedata.player.id, i);
+				if success then 
+					if eq_id == 19 then --radio
+						server.setGameSetting("map_show_players", true);
+					end;
+				end;
+			end;
+			
+			for id, worker in pairs (g_savedata.workers) do
+				for i = 2, 5 do
+				local eq_id, success = server.getCharacterItem(id, i);
+				if success then 
+					if eq_id == 19 then --radio
+						local ui_id = server.getMapID();
+						worker.map_marker = ui_id;
+						--[[
+						POSITION_TYPE |
+						0 = fixed,
+						1 = vehicle,
+						2 = object
+
+						MARKER_TYPE |
+						0 = delivery_target,
+						1 = survivor,
+						2 = object,
+						3 = waypoint,
+						4 = tutorial,
+						5 = fire,
+						6 = shark,
+						7 = ice,
+						8 = search_radius
+						--]]
+						
+						local worker_matrix, success = server.getObjectPos(worker.id);
+						local x, y, z = matrix.position(worker_matrix);
+						local text = worker.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+						server.addMapObject(peer_id, ui_id, 2, 1, x, z, 0, 0, nil, worker.id, worker.name, 0, text);
+					end;
+				end;
+			end;
+			end;
+			
+		else --close map
+			server.setGameSetting("map_show_players", false);
+			for id, worker in pairs (g_savedata.workers) do
+				if (worker.map_marker ~= nil) then
+					server.removeMapObject(peer_id, worker.map_marker);
+				end;
+				worker.map_marker = nil;
+			end;
+		end;
+	end;
 end;
 
 function onSpawnAddonComponent(id, name, type, playlist_index)
@@ -458,6 +517,7 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?settings - enable settings menu in game.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?restore_settings - restore default addon settings.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?activate_items worker_name - activate character items.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "Use the Radio to show player or worker markers on the map.", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
