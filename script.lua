@@ -260,7 +260,8 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		local name, is_success = server.getVehicleName(vehicle_id);
 		if is_success then
 			local pos = matrix.translation(x, y, z);
-			g_savedata.vehicles[vehicle_id] = { name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED" };
+			local vdata, is_success = server.getVehicleData(vehicle_id);
+			g_savedata.vehicles[vehicle_id] = { name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED", cost = cost, file = vdata.filename};
 		end;
 	end;
 end;
