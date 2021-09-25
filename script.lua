@@ -443,7 +443,7 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?sw") then switch2W(arg1); end;
 	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
 	if (command == "?restore_settings") then on_restore_settings(); end;
-	if (command == "?activate_items") then ativate_items(arg1, arg2); end;
+	if (command == "?activate_items") then ativate_items(arg1); end;
 end
 
 
@@ -456,7 +456,7 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?sw worker_name - switch to worker with name.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?settings - enable settings menu in game.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?restore_settings - restore default addon settings.", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?activate_items worker_name [idx]- activate character item. No idx - all items.");
+		server.announce("[HELP]", "?activate_items worker_name - activate character items.", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -584,7 +584,7 @@ function GrabCharacterItems(id)
 	return items;
 end;
 
-function SetCharacterItems(id, items, need_pay, activate, activate_idx)
+function SetCharacterItems(id, items, need_pay, activate)
 	local my_currency = server.getCurrency();
 	local my_research_points = server.getResearchPoints();
 	for idx, e in pairs (items) do
@@ -602,19 +602,17 @@ function SetCharacterItems(id, items, need_pay, activate, activate_idx)
 				server.announce(g_savedata.player.team_name, "payment of the cost of new " ..item.name.. " $" ..(item.pay).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);
 			end;
 		end;
-		if activate == nil or activate = false then 
+		if (activate == nil or activate == false) then 
 			local is_success = server.setCharacterItem(id, idx, e.eq_id, false, ival, fval);
 		else
 			local activate = item.active;
-			if activate_idx ~= nil and activate_idx ~= idx then activate = false; end;
-			if activate_idx ~= nil and activate_idx == idx then activate = true; end;
 			local is_success = server.setCharacterItem(id, idx, e.eq_id, activate, ival, fval);
 		end;
 			
 	end;
 end;
 
-function ativate_items(arg1, arg2);
+function ativate_items(arg1)
 	local worker = nil
 	local best_ditance = nil;
 	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id);
@@ -634,7 +632,7 @@ function ativate_items(arg1, arg2);
 		local worker_items = GrabCharacterItems(worker.id);
 		SetCharacterItems(worker.id, worker_items, false, true, arg2);
 	else
-		server.announce("[NO WORKER FOUNDED]", "?activate_items worker_name [idx]- activate character item. No idx - all items.");
+		server.announce("[NO WORKER FOUNDED]", "?activate_items worker_name- activate character items.");
 	end;
 end;
 
