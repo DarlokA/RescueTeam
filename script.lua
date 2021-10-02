@@ -4,6 +4,7 @@ g_savedata = {
 	["day"] = 0,
 	["settings"] = false,
 	["vehicles"] = {},
+	["no_pay_sw_items"] = false
 }
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
@@ -504,6 +505,8 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
 	if (command == "?restore_settings") then on_restore_settings(); end;
 	if (command == "?activate_items") then ativate_items(arg1); end;
+	if (command == "?no_pay_sw_items") then g_savedata.no_pay_sw_items = true; end;
+	if (command == "?pay_sw_items") then g_savedata.no_pay_sw_items = false; end;
 end
 
 
@@ -518,6 +521,8 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?restore_settings - restore default addon settings.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?activate_items worker_name - activate character items.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "Use the Radio to show player or worker markers on the map.", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?no_pay_sw_items", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?pay_sw_items", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -741,7 +746,11 @@ function switch2W(arg1)
 		server.setCharacterData(worker.id, my_data.hp, true, true);
 		
 		if (worker_items ~= nil) then
-			SetCharacterItems(g_savedata.player.id, worker_items, true, false);
+			if g_savedata.no_pay_sw_items == nil or g_savedata.no_pay_sw_items == false then 
+				SetCharacterItems(g_savedata.player.id, worker_items, true, false);
+			else
+				SetCharacterItems(g_savedata.player.id, worker_items, false, false);
+			end;
 		end;
 		if (player_items ~= nil) then
 			SetCharacterItems(worker.id, player_items, false, false);
