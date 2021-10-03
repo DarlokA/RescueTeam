@@ -10,6 +10,8 @@ need_seat_player = false;
 tgt_player_vehicle_id = -1;
 tgt_player_seat_name = nil;
 player_seat_ticks = 0;
+player_tp_ticks = 0;
+player_tp_matrix = nil;
 
 need_seat_worker = false;
 tgt_worker_vehicle_id = -1;
@@ -413,9 +415,9 @@ function tryingSitPlayer()
 		if success and (vid == tgt_player_vehicle_id) then 
 			need_seat_player = false;
 		end;
-		local is_player_vehicle = isPlayerVehicle(tgt_player_vehicle_id);
+		--local is_player_vehicle = isPlayerVehicle(tgt_player_vehicle_id);
 		local is_simulating, is_success = server.getVehicleSimulating(tgt_player_vehicle_id);
-		if not is_success or not is_player_vehicle then need_seat_player = false; end;
+		if not is_success then need_seat_player = false; end;
 		if need_seat_player then 
 			player_seat_ticks = player_seat_ticks + 1;
 		end;
@@ -457,9 +459,9 @@ function tryingSitWorker()
 			need_seat_worker = false;
 		end;
 		
-		local is_player_vehicle = isPlayerVehicle(tgt_player_vehicle_id);
+		--local is_player_vehicle = isPlayerVehicle(tgt_player_vehicle_id);
 		
-		if not is_success or not is_player_vehicle then need_seat_worker = false; end;
+		if not is_success then need_seat_worker = false; end;
 		if need_seat_worker then
 			worker_seat_ticks = worker_seat_ticks + 1;
 		end;
@@ -481,6 +483,14 @@ function onTick(game_ticks)
 		dailyPay();
 	end;
 	g_savedata.day = days_survived;
+	if (player_tp_matrix ~= nil) and not need_seat_player then
+		player_tp_ticks = player_tp_ticks + 1;
+		server.setPlayerPos(g_savedata.player.peer_id, player_tp_matrix);
+		if player_tp_ticks > 5*second then
+			player_tp_ticks = 0;
+			player_tp_matrix = nil;
+		end;
+	end;
 	checkSit();
 	tryingSitPlayer();
 	tryingSitWorker();
@@ -782,6 +792,10 @@ function switch2W(arg1)
 		
 		
 		server.setObjectPos(worker.id, player_matrix);
+		if not need_seat_player then
+			player_tp_matrix = worker_matrix;
+			player_tp_ticks = 0;
+		end;
 		server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		g_savedata.workers[worker.id].is_sit = false;
 		g_savedata.workers[worker.id].seat_name = nil;
