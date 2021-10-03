@@ -24,7 +24,7 @@ second = 60;
 offsetType = {};
 eq_items = {};
 
---g_savedata.vehicles[vehicle_id] = { name = name, transform, dx = 0, dy = 0, dz= 0, ticks = 0 };
+--g_savedata.vehicles[vehicle_id] = { peer_id = peer_id, name = name, transform, dx = 0, dy = 0, dz= 0, ticks = 0 };
 
 
 --[[local worker = { 
@@ -248,6 +248,16 @@ function checkSit()
 end;
 
 
+function isPlayerVehicle(vehicle_id)
+	local v = g_savedata.vehicles[vehicle_id];
+	if (v == nil) then 
+		return false; 
+	else
+		return v.peer_id > -1;
+	end;
+	
+end;
+
 function onCharacterSit(object_id, vehicle_id, seat_name)
 	if object_id == g_savedata.player.id then
 		--printD("On Player SIT to " ..vehicle_id.. " " ..seat_name);
@@ -321,7 +331,7 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		if is_success then
 			local pos = matrix.translation(x, y, z);
 			local vdata, is_success = server.getVehicleData(vehicle_id);
-			g_savedata.vehicles[vehicle_id] = { name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED", cost = cost, file = vdata.filename};
+			g_savedata.vehicles[vehicle_id] = { peer_id = peer_id, name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED", cost = cost, file = vdata.filename};
 		end;
 	end;
 end;
@@ -403,12 +413,13 @@ function tryingSitPlayer()
 		if success and (vid == tgt_player_vehicle_id) then 
 			need_seat_player = false;
 		end;
+		local is_player_vehicle = isPlayerVehicle(tgt_player_vehicle_id);
 		local is_simulating, is_success = server.getVehicleSimulating(tgt_player_vehicle_id);
-		if not is_success then need_seat_player = false; end;
+		if not is_success or not is_player_vehicle then need_seat_player = false; end;
 		if need_seat_player then 
 			player_seat_ticks = player_seat_ticks + 1;
 		end;
-		if is_simulating and player_seat_ticks > 1200 then 
+		if is_simulating and player_seat_ticks > 5 * second then 
 			player_seat_ticks = 0;
 			need_seat_player = false;
 		end;
@@ -446,11 +457,13 @@ function tryingSitWorker()
 			need_seat_worker = false;
 		end;
 		
-		if not is_success then need_seat_worker = false; end;
+		local is_player_vehicle = isPlayerVehicle(tgt_player_vehicle_id);
+		
+		if not is_success or not is_player_vehicle then need_seat_worker = false; end;
 		if need_seat_worker then
 			worker_seat_ticks = worker_seat_ticks + 1;
 		end;
-		if is_simulating and worker_seat_ticks > 1200 then
+		if is_simulating and worker_seat_ticks > 5*second then
 			worker_seat_ticks = 0;
 			need_seat_worker = false;
 		end;
