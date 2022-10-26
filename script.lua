@@ -4,6 +4,7 @@ g_savedata = {
 	["day"] = 0,
 	["settings"] = false,
 	["vehicles"] = {},
+	["all_vehicles"] = {},
 	["no_pay_sw_items"] = false
 }
 need_seat_player = false;
@@ -90,7 +91,10 @@ function onCreate(is_world_create)
 	eq_items[27] = { name="welding_torch", active = false,  ival = nil, fval = 400.0, pay= 500 };-- [float = charge]
 	eq_items[28] = { name="coal", active = false,  ival = nil, fval = nil, pay= 0 };
 	eq_items[30] = { name="radiation_detector", active = true,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
-
+	
+	if g_savedata.settings == false then
+		on_restore_settings();
+	end;
 	
 end;
 
@@ -111,7 +115,7 @@ function onToggleMap(peer_id, is_open)
 				for i = 2, 5 do
 				local eq_id, success = server.getCharacterItem(id, i);
 				if success then 
-					if eq_id == 19 then --radio
+					if true or eq_id == 19 then --radio
 						local ui_id = server.getMapID();
 						worker.map_marker = ui_id;
 						--[[
@@ -142,7 +146,7 @@ function onToggleMap(peer_id, is_open)
 			end;
 			
 		else --close map
-			server.setGameSetting("map_show_players", false);
+			server.setGameSetting("map_show_players", true);
 			for id, worker in pairs (g_savedata.workers) do
 				if (worker.map_marker ~= nil) then
 					server.removeMapObject(peer_id, worker.map_marker);
@@ -294,7 +298,7 @@ function onCharacterSit(object_id, vehicle_id, seat_name)
 	end;	
 end;
 
-function on_restore_settings()
+function on_restore_settings( )
 	server.setGameSetting("third_person", true)
 	server.setGameSetting("third_person_vehicle", true)
 	server.setGameSetting("vehicle_damage", true)
@@ -304,11 +308,11 @@ function on_restore_settings()
 	server.setGameSetting("fast_travel", false)
 	server.setGameSetting("teleport_vehicle", false)
 	server.setGameSetting("rogue_mode", false)
-	server.setGameSetting("auto_refuel", false)
+	server.setGameSetting("auto_refuel", true)
 	server.setGameSetting("megalodon", true)
 	server.setGameSetting("map_show_players", false)
 	server.setGameSetting("map_show_vehicles", false)
-	server.setGameSetting("show_3d_waypoints", false)
+	server.setGameSetting("show_3d_waypoints", true)
 	server.setGameSetting("show_name_plates", true)
 	server.setGameSetting("infinite_money", false)
 	server.setGameSetting("settings_menu", false)
@@ -324,22 +328,36 @@ function on_restore_settings()
 	server.setGameSetting("photo_mode", true)
 	server.setGameSetting("respawning", true)
 	server.setGameSetting("settings_menu_lock", true)
-	server.setGameSetting("despawn_on_leave", true)
+	server.setGameSetting("despawn_on_leave", false)
 end;
 
+
 function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost) 
+	
+	local name, is_success = server.getVehicleName(vehicle_id);
+	if (is_success) then
+		g_savedata.all_vehicles[vehicle_id] = { vehiche_cost = cost, vehiche_name = name  };
+	end;
+	
 	if (peer_id == g_savedata.player.peer_id) then
-		local name, is_success = server.getVehicleName(vehicle_id);
+		if g_savedata.settings == false then
+			on_restore_settings();
+			g_savedata.settings = true;
+		end;
 		if is_success then
 			local pos = matrix.translation(x, y, z);
 			local vdata, is_success = server.getVehicleData(vehicle_id);
 			g_savedata.vehicles[vehicle_id] = { peer_id = peer_id, name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED", cost = cost, file = vdata.filename};
 		end;
+	else
+		server.setVehicleEditable(vehicle_id, true);
 	end;
+	
 end;
 
 function onVehicleDespawn(vehicle_id, peer_id)
 	g_savedata.vehicles[vehicle_id] = nil;
+	g_savedata.all_vehicles[vehicle_id] = nil;
 end;
 
 function onVehicleUnload(vehicle_id)
@@ -352,6 +370,9 @@ end;
 function onVehicleLoad(vehicle_id)
 	local vehicle = g_savedata.vehicles[vehicle_id];
 	if vehicle ~= nil then
+		--if vehicle.state == "AI_TRAFFIC" then
+			--server.resetVehicleState(vehicle_id);
+		--end;
 		vehicle.state = "SIMULATED";
 	end;
 	
@@ -368,19 +389,25 @@ function Traffic()
 		local pos_matrix, is_success = server.getVehiclePos(vehicle_id);
 		local x1, y1, z1 = matrix.position(vehicle.transform);
 		local x2, y2, z2 = matrix.position(pos_matrix);
-		if vehicle.state == "AI_TRAFFIC" then
-			--x2 = x1 + vehicle.dx;
-			--y2 = y1;
-			--z2 = z1 + vehicle.dz;
-			--pos_matrix = matrix.translation(x2, y2, z2);
-			--g_savedata.vehicles[vehicle_id].transform = pos_matrix;
-			--server.setVehiclePos(vehicle_id, pos_matrix);
-		end;
+		--if vehicle.state == "AI_TRAFFIC" then
+		--	x2 = x1 + vehicle.dx;
+		--	y2 = y1;
+		--	z2 = z1 + vehicle.dz;
+		--	pos_matrix = matrix.translation(x2, y2, z2);
+		--	g_savedata.vehicles[vehicle_id].transform = pos_matrix;
+		--	server.setVehiclePos(vehicle_id, pos_matrix);
+		--end;
 		if vehicle.state == "SIMULATED" then
-			g_savedata.vehicles[vehicle_id].dx = x2 - x1;
-			g_savedata.vehicles[vehicle_id].dy = y2 - y1;
-			g_savedata.vehicles[vehicle_id].dz = z2 - z1;
-			g_savedata.vehicles[vehicle_id].transform = pos_matrix;
+			--if tgt_player_vehicle_id == vehicle_id and need_seat_player then
+			--	pos_matrix = matrix.translation(x1, y1, z1);
+			--	server.setVehiclePos(vehicle_id, pos_matrix);
+			--	server.resetVehicleState(vehicle_id);
+			--else
+				g_savedata.vehicles[vehicle_id].dx = x2 - x1;
+				g_savedata.vehicles[vehicle_id].dy = y2 - y1;
+				g_savedata.vehicles[vehicle_id].dz = z2 - z1;
+				g_savedata.vehicles[vehicle_id].transform = pos_matrix;
+			--end;
 		end;
 	end;
 end;
@@ -392,7 +419,7 @@ function tryingSitPlayer()
 			local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
 			if success then
 				local tx, ty, tz = matrix.position(tgt);
-				tgt = matrix.translation(tx, ty+20, tz);
+				tgt = matrix.translation(tx, ty, tz);
 				server.setPlayerPos(g_savedata.player.peer_id, tgt);			
 			end;
 			return; 
@@ -406,7 +433,7 @@ function tryingSitPlayer()
 		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
 		if success then
 			local tx, ty, tz = matrix.position(tgt);
-			tgt = matrix.translation(tx, ty+20, tz);
+			tgt = matrix.translation(tx, ty, tz);
 			server.setPlayerPos(g_savedata.player.peer_id, tgt);
 			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
 		end;
@@ -449,7 +476,7 @@ function tryingSitWorker()
 		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
 		if success then
 			local tx, ty, tz = matrix.position(tgt);
-			tgt = matrix.translation(tx, ty+2, tz);
+			tgt = matrix.translation(tx, ty+20, tz);
 			server.setObjectPos(sit_worker_id, tgt);
 			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
 		end;
@@ -473,10 +500,6 @@ function tryingSitWorker()
 end;
 
 function onTick(game_ticks)
-	if not g_savedata.settings then
-		on_restore_settings();
-		g_savedata.settings = true;
-	end;
 
 	local days_survived = server.getDateValue();
 	if (days_survived > g_savedata.day) then
@@ -492,8 +515,8 @@ function onTick(game_ticks)
 		end;
 	end;
 	checkSit();
-	tryingSitPlayer();
 	tryingSitWorker();
+	tryingSitPlayer();
 	Traffic();
 end
 
@@ -527,6 +550,24 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?sw") then switch2W(arg1); end;
 	if (command == "?settings") then server.setGameSetting("settings_menu", true); end;
 	if (command == "?restore_settings") then on_restore_settings(); end;
+	if (command == "?refuel") then 
+		if (server.getGameSettings()["auto_refuel"]) then
+			server.setGameSetting("auto_refuel", false);
+			server.announce(g_savedata.player.team_name, "refuel next vehicle DISABLED", g_savedata.player.peer_id);
+		else
+			server.setGameSetting("auto_refuel", true);
+			server.announce(g_savedata.player.team_name, "refuel next vehicle ENABLED", g_savedata.player.peer_id);
+		end	
+	end;
+	if (command == "?unlock_all_components") then 
+		if server.getGameSettings()["unlock_all_components"] == true then
+			server.setGameSetting("unlock_all_components", false);
+			server.announce(g_savedata.player.team_name, "unlock_all_components DISABLED", g_savedata.player.peer_id);
+		else
+			server.setGameSetting("unlock_all_components", true);
+			server.announce(g_savedata.player.team_name, "unlock_all_components ENABLED", g_savedata.player.peer_id);
+		end	
+	end;
 	if (command == "?activate_items") then ativate_items(arg1); end;
 	if (command == "?no_pay_sw_items") then g_savedata.no_pay_sw_items = true; end;
 	if (command == "?pay_sw_items") then g_savedata.no_pay_sw_items = false; end;
@@ -546,6 +587,8 @@ function printHelp(arg1)
 		server.announce("[HELP]", "Use the Radio to show player or worker markers on the map.", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?no_pay_sw_items", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?pay_sw_items", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?refuel", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?unlock_all_components", g_savedata.player.peer_id);
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -712,7 +755,9 @@ function ativate_items(arg1)
 				local distSQ = distQ(worker_matrix, player_matrix);
 				if (best_ditance == nil or best_ditance > distSQ) then
 					best_ditance = distSQ;
-					worker = h;
+					--if best_distance < 1000000 then 
+						worker = h;
+					--end;
 				end;
 			end;
 		end;
@@ -736,7 +781,9 @@ function switch2W(arg1)
 				local distSQ = distQ(worker_matrix, player_matrix);
 				if (best_ditance == nil or best_ditance > distSQ) then
 					best_ditance = distSQ;
-					worker = h;
+					--if best_distance < 1000000 then 
+						worker = h;
+					--end;
 				end;
 			end;
 		end;
@@ -783,11 +830,14 @@ function switch2W(arg1)
 		local wx, wy, wz = matrix.position(worker_matrix);
 		
 		if (need_seat_worker) then
-			player_matrix = matrix.translation(px, py + 2, pz);
+			player_matrix = matrix.translation(px, py + 10, pz);
+			player_matrix_tmp = matrix.translation(px, py + 100, pz);
+			server.setPlayerPos(g_savedata.player.peer_id, player_matrix_tmp);
+			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
 		end;
 		
 		if (need_seat_player) then
-			worker_matrix = matrix.translation(wx, wy + 2, wz);
+			worker_matrix = matrix.translation(wx, wy + 10, wz);
 		end;	
 		
 		
@@ -796,7 +846,7 @@ function switch2W(arg1)
 			player_tp_matrix = worker_matrix;
 			player_tp_ticks = 0;
 		end;
-		server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
+		--server.setPlayerPos(g_savedata.player.peer_id, worker_matrix);
 		g_savedata.workers[worker.id].is_sit = false;
 		g_savedata.workers[worker.id].seat_name = nil;
 		g_savedata.workers[worker.id].vehicle_id = -1;
@@ -805,13 +855,13 @@ function switch2W(arg1)
 		g_savedata.player.seat_name = nil;
 		
 		
-		if (need_seat_player) then
-			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
-		end;
+		--if (need_seat_player) then
+		--	server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
+		--end;
 		
-		if (need_seat_worker) then
-			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
-		end;
+		--if (need_seat_worker) then
+		--	server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
+		--end;
 	end;
 end;
 
@@ -836,7 +886,9 @@ function renameW(arg1, arg2)
 					local distSQ = distQ(worker_matrix, player_matrix);
 					if (best_ditance == nil or best_ditance > distSQ) then
 						best_ditance = distSQ;
-						worker = h;
+						if best_distance < 1000000 then 
+							worker = h;
+						end;
 					end
 				end
 			end
