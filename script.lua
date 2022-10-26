@@ -419,7 +419,7 @@ function tryingSitPlayer()
 			local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
 			if success then
 				local tx, ty, tz = matrix.position(tgt);
-				tgt = matrix.translation(tx, ty, tz);
+				tgt = matrix.translation(tx, ty+2, tz);
 				server.setPlayerPos(g_savedata.player.peer_id, tgt);			
 			end;
 			return; 
@@ -433,7 +433,7 @@ function tryingSitPlayer()
 		local tgt, success = server.getVehiclePos(tgt_player_vehicle_id);
 		if success then
 			local tx, ty, tz = matrix.position(tgt);
-			tgt = matrix.translation(tx, ty, tz);
+			tgt = matrix.translation(tx, ty+2, tz);
 			server.setPlayerPos(g_savedata.player.peer_id, tgt);
 			server.setCharacterSeated(g_savedata.player.id, tgt_player_vehicle_id, tgt_player_seat_name);
 		end;
@@ -463,7 +463,7 @@ function tryingSitWorker()
 			local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
 			if success then
 				local tx, ty, tz = matrix.position(tgt);
-				tgt = matrix.translation(tx, ty+20, tz);
+				tgt = matrix.translation(tx, ty+2, tz);
 				server.setObjectPos(sit_worker_id, tgt);
 			end;
 			return; 
@@ -476,7 +476,7 @@ function tryingSitWorker()
 		local tgt, success = server.getVehiclePos(tgt_worker_vehicle_id);
 		if success then
 			local tx, ty, tz = matrix.position(tgt);
-			tgt = matrix.translation(tx, ty+20, tz);
+			tgt = matrix.translation(tx, ty+2, tz);
 			server.setObjectPos(sit_worker_id, tgt);
 			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
 		end;
@@ -830,14 +830,14 @@ function switch2W(arg1)
 		local wx, wy, wz = matrix.position(worker_matrix);
 		
 		if (need_seat_worker) then
-			player_matrix = matrix.translation(px, py + 10, pz);
-			player_matrix_tmp = matrix.translation(px, py + 100, pz);
+			player_matrix = matrix.translation(px, py + 2, pz);
+			player_matrix_tmp = matrix.translation(px, py + 4, pz);
 			server.setPlayerPos(g_savedata.player.peer_id, player_matrix_tmp);
 			server.setCharacterSeated(sit_worker_id, tgt_worker_vehicle_id, tgt_worker_seat_name);
 		end;
 		
 		if (need_seat_player) then
-			worker_matrix = matrix.translation(wx, wy + 10, wz);
+			worker_matrix = matrix.translation(wx, wy + 2, wz);
 		end;	
 		
 		
