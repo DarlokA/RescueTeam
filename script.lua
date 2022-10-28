@@ -24,6 +24,8 @@ dismiss_pay = 2000;
 
 second = 60;
 
+map_opened = false;
+
 offsetType = {};
 eq_items = {};
 
@@ -99,6 +101,7 @@ function onCreate(is_world_create)
 end;
 
 function onToggleMap(peer_id, is_open)
+	map_opened = is_open;
 	local is_settings = server.getGameSettings()["settings_menu"];
 	if not is_settings then
 		if is_open then--open map
@@ -364,6 +367,7 @@ function onVehicleUnload(vehicle_id)
 	local vehicle = g_savedata.vehicles[vehicle_id];
 	if vehicle ~= nil then
 		vehicle.state = "AI_TRAFFIC";
+		vehicle.ticks = 0;
 	end;
 end;
 
@@ -384,19 +388,56 @@ function onVehicleLoad(vehicle_id)
 	end;
 end;
 
-function Traffic()
+function Traffic(  )
 	for vehicle_id, vehicle in pairs (g_savedata.vehicles) do
 		local pos_matrix, is_success = server.getVehiclePos(vehicle_id);
 		local x1, y1, z1 = matrix.position(vehicle.transform);
 		local x2, y2, z2 = matrix.position(pos_matrix);
-		--if vehicle.state == "AI_TRAFFIC" then
-		--	x2 = x1 + vehicle.dx;
-		--	y2 = y1;
-		--	z2 = z1 + vehicle.dz;
-		--	pos_matrix = matrix.translation(x2, y2, z2);
-		--	g_savedata.vehicles[vehicle_id].transform = pos_matrix;
-		--	server.setVehiclePos(vehicle_id, pos_matrix);
-		--end;
+		
+
+--		if vehicle.state == "AI_TRAFFIC" then
+--			vehicle.ticks = vehicle.ticks + 1;
+--			if vehicle.ticks > 100 then
+--				local dx = vehicle.dx * vehicle.ticks;
+--				local dz = vehicle.dz * vehicle.ticks;
+--				x2 = x1 + dx;
+--				y2 = y1;
+--				z2 = z1 + dz;
+--				
+--				local length_xz = math.sqrt((dx * dx) + (dz * dz));
+--				local movement_x = dx / length_xz;
+--               local movement_z = dz / length_xz;
+--				
+--				local rotation_matrix = matrix.rotationToFaceXZ(movement_x, movement_z);
+--                local new_pos = matrix.multiply(matrix.translation(x2, y2, z2), rotation_matrix);
+--				
+--				g_savedata.vehicles[vehicle_id].transform = new_pos;
+--				server.setVehiclePos(vehicle_id, new_pos);
+--				
+--				
+--				for id, h in pairs(g_savedata.workers) do
+--					if h.vehicle_id == vehicle_id then
+--						local workerpos = matrix.translation(x2, y2 + 2, z2);
+--						server.setObjectPos(id, workerpos);
+--						if map_opened then
+--							if (h.map_marker ~= nil) then
+--								server.removeMapObject(vehicle.peer_id, h.map_marker);
+--								local worker_matrix, success = server.getObjectPos(id);
+--								local x, y, z = matrix.position(worker_matrix);
+--								local text = h.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+--								local ui_id = server.getMapID();
+--								h.map_marker = ui_id;
+--								server.addMapObject(peer_id, h.map_marker, 2, 1, x, z, 0, 0, nil, h.id, h.name, 0, text);
+--							end;
+--						end;
+--						break;
+--					end;
+--				end;
+--				
+--				
+--				vehicle.ticks = 0;
+--			end;
+--		end;
 		if vehicle.state == "SIMULATED" then
 			--if tgt_player_vehicle_id == vehicle_id and need_seat_player then
 			--	pos_matrix = matrix.translation(x1, y1, z1);
@@ -404,9 +445,28 @@ function Traffic()
 			--	server.resetVehicleState(vehicle_id);
 			--else
 				g_savedata.vehicles[vehicle_id].dx = x2 - x1;
-				g_savedata.vehicles[vehicle_id].dy = y2 - y1;
+				g_savedata.vehicles[vehicle_id].dy = 0;
 				g_savedata.vehicles[vehicle_id].dz = z2 - z1;
 				g_savedata.vehicles[vehicle_id].transform = pos_matrix;
+				
+				
+				for id, h in pairs(g_savedata.workers) do
+					if h.vehicle_id == vehicle_id then
+						if map_opened then
+							if (h.map_marker ~= nil) then
+								server.removeMapObject(vehicle.peer_id, h.map_marker);
+								local worker_matrix, success = server.getObjectPos(id);
+								local x, y, z = matrix.position(worker_matrix);
+								local text = h.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
+								local ui_id = server.getMapID();
+								h.map_marker = ui_id;
+								server.addMapObject(peer_id, h.map_marker, 2, 1, x, z, 0, 0, nil, h.id, h.name, 0, text);
+							end;
+						end;
+						break;
+					end;
+				end;
+				
 			--end;
 		end;
 	end;
