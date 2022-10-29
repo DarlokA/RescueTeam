@@ -937,7 +937,7 @@ end;
 function renameW(arg1, arg2)
 	if arg1 == nil or arg2 == nil then return; end;
 	local worker = nil
-	local best_ditance = 25;
+	local best_ditance = 999999999;
 	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id)
 	for _, h in pairs(g_savedata.workers) do
 			if (arg1 == nil or (type(arg1) == "string" and h.name == arg1) or (type(arg1) == "number" and h.id == arg1)) then
@@ -946,9 +946,7 @@ function renameW(arg1, arg2)
 					local distSQ = distQ(worker_matrix, player_matrix);
 					if (best_ditance == nil or best_ditance > distSQ) then
 						best_ditance = distSQ;
-						if best_distance < 1000000 then 
-							worker = h;
-						end;
+						worker = h;
 					end
 				end
 			end
