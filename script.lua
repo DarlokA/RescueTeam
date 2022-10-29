@@ -47,16 +47,105 @@ eq_items = {};
 --]]
 function onCreate(is_world_create)
 	offsetType[1] = { name = "worker", pay = 100 }
-	--[[offsetType[2] = { name = "fisher", pay = 100 }
-	offsetType[3] = { name = "waiter", pay = 100 }
-	offsetType[4] = { name = "swimmer", pay = 100 }
-	offsetType[5] = { name = "military", pay = 100 }
-	offsetType[6] = { name = "office", pay = 100 }
-	offsetType[7] = { name = "police", pay = 100 }
-	offsetType[8] = { name = "scientist", pay = 100 }
-	offsetType[9] = { name = "medical", pay = 100 }
-	offsetType[10] = { name = "diver", pay = 100 }
-	offsetType[11] = { name = "citizen", pay = 100 }
+	--[[
+	OUTFIT_TYPE |
+	0 = none,
+	1 = worker,
+	2 = fishing,
+	3 = waiter,
+	4 = swimsuit,
+	5 = military,
+	6 = office,
+	7 = police,
+	8 = science,
+	9 = medical,
+	10 = wetsuit,
+	11 = civilian
+	
+	Outfits
+	0 = none,
+	1 = diving,
+	2 = firefighter,
+	3 = scuba,
+	4 = parachute, [int = {0 = deployed, 1 = ready}]
+	5 = arctic,
+	29 = hazmat,
+	74 = bomb_disposal,
+	75 = chest_rig,
+	76 = black_hawk_vest
+	77 = plate_vest,
+	78 = armor_vest,
+Items
+	6 = binoculars,
+	7 = cable,
+	8 = compass,
+	9 = defibrillator, [int = charges]
+	10 = fire_extinguisher, [float = ammo]
+	11 = first_aid, [int = charges]
+	12 = flare, [int = charges]
+	13 = flaregun, [int = ammo]
+	14 = flaregun_ammo, [int = ammo]
+	15 = flashlight, [float = battery]
+	16 = hose, [int = {0 = hose off, 1 = hose on}]
+	17 = night_vision_binoculars, [float = battery]
+	18 = oxygen_mask, [float = oxygen]
+	19 = radio, [int = channel] [float = battery]
+	20 = radio_signal_locator, [float = battery]
+	21 = remote_control, [int = channel] [float = battery]
+	22 = rope,
+	23 = strobe_light, [int = {0 = off, 1 = on}] [float = battery]
+	24 = strobe_light_infrared, [int = {0 = off, 1 = on}] [float = battery]
+	25 = transponder, [int = {0 = off, 1 = on}] [float = battery]
+	26 = underwater_welding_torch, [float = charge]
+	27 = welding_torch, [float = charge]
+	28 = coal,
+	30 = radiation_detector, [float = battery]
+	31 = c4, [int = ammo]
+	32 = c4_detonator,
+	33 = speargun, [int = ammo]
+	34 = speargun_ammo,
+	35 = pistol, [int = ammo]
+	36 = pistol_ammo,
+	37 = smg, [int = ammo]
+	38 = smg_ammo,
+	39 = rifle, [int = ammo]
+	40 = rifle_ammo,
+	41 = grenade, [int = ammo]
+	42 = machine_gun_ammo_box_k,
+	43 = machine_gun_ammo_box_he,
+	44 = machine_gun_ammo_box_he_frag,
+	45 = machine_gun_ammo_box_ap,
+	46 = machine_gun_ammo_box_i,
+	47 = light_auto_ammo_box_k,
+	48 = light_auto_ammo_box_he,
+	49 = light_auto_ammo_box_he_frag,
+	50 = light_auto_ammo_box_ap,
+	51 = light_auto_ammo_box_i,
+	52 = rotary_auto_ammo_box_k,
+	53 = rotary_auto_ammo_box_he,
+	54 = rotary_auto_ammo_box_he_frag,
+	55 = rotary_auto_ammo_box_ap,
+	56 = rotary_auto_ammo_box_i,
+	57 = heavy_auto_ammo_box_k,
+	58 = heavy_auto_ammo_box_he,
+	59 = heavy_auto_ammo_box_he_frag,
+	60 = heavy_auto_ammo_box_ap,
+	61 = heavy_auto_ammo_box_i,
+	62 = battle_shell_k,
+	63 = battle_shell_he,
+	64 = battle_shell_he_frag,
+	65 = battle_shell_ap,
+	66 = battle_shell_i,
+	67 = artillery_shell_k,
+	68 = artillery_shell_he,
+	69 = artillery_shell_he_frag,
+	70 = artillery_shell_ap,
+	71 = artillery_shell_i,
+	72 = glowstick,
+	73 = dog_whistle,
+
+	
+	
 	--]]
 	
 	
@@ -68,6 +157,11 @@ function onCreate(is_world_create)
 	eq_items[4] = { name="parachute", active = false,  ival = 1, fval = nil, pay= 0};-- = {0 = deployed, 1 = ready}]
 	eq_items[5] = { name="arctic", active = false,  ival = nil, fval = nil, pay= 0};
 	eq_items[29] = { name="hazmat", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[74] = { name="bomb_disposal", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[75] = { name="chest_rig", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[76] = { name="black_hawk_vest", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[77] = { name="plate_vest", active = false,  ival = nil, fval = nil, pay= 0};
+	eq_items[78] = { name="armor_vest", active = false,  ival = nil, fval = nil, pay= 0};
 --Items
 	eq_items[6] = {  name="binoculars", active = false,  ival = nil, fval = nil, pay= 0 };
 	eq_items[7] = {  name="cable", active = false,  ival = nil, fval = nil, pay= 0 };
@@ -93,6 +187,51 @@ function onCreate(is_world_create)
 	eq_items[27] = { name="welding_torch", active = false,  ival = nil, fval = 400.0, pay= 500 };-- [float = charge]
 	eq_items[28] = { name="coal", active = false,  ival = nil, fval = nil, pay= 0 };
 	eq_items[30] = { name="radiation_detector", active = true,  ival = nil, fval = 100.0, pay= 0 };-- [float = battery]
+	
+	
+	eq_items[31] = { name="c4", active = false,  ival = 1, fval = nil, pay= 0 }; --[int = ammo]
+	eq_items[32] = { name="c4_detonator", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[33] = { name="speargun", active = false,  ival = 1, fval = nil, pay= 0 }; --[int = ammo]
+	eq_items[34] = { name="speargun_ammo", active = false,  ival = 8, fval = nil, pay= 0 };
+	eq_items[35] = { name="pistol", active = false,  ival = 17, fval = nil, pay= 0 }; --[int = ammo]
+	eq_items[36] = { name="pistol_ammo", active = false,  ival = 17, fval = nil, pay= 0 };
+	eq_items[37] = { name="smg", active = false,  ival = 40, fval = nil, pay= 0 }; --[int = ammo]
+	eq_items[38] = { name="smg_ammo", active = false,  ival = 40, fval = nil, pay= 0 };
+	eq_items[39] = { name="rifle", active = false,  ival = 30, fval = nil, pay= 0 }; --[int = ammo]
+	eq_items[40] = { name="rifle_ammo", active = false,  ival = 30, fval = nil, pay= 0 };
+	eq_items[41] = { name="grenade", active = false,  ival = 1, fval = nil, pay= 0 }; --[int = ammo]
+	eq_items[42] = { name="machine_gun_ammo_box_k", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[43] = { name="machine_gun_ammo_box_he", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[44] = { name="machine_gun_ammo_box_he_frag", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[45] = { name="machine_gun_ammo_box_ap", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[46] = { name="machine_gun_ammo_box_i", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[47] = { name="light_auto_ammo_box_k", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[48] = { name="light_auto_ammo_box_he", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[49] = { name="light_auto_ammo_box_he_frag", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[50] = { name="light_auto_ammo_box_ap", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[51] = { name="light_auto_ammo_box_i", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[52] = { name="rotary_auto_ammo_box_k", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[53] = { name="rotary_auto_ammo_box_he", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[54] = { name="rotary_auto_ammo_box_he_frag", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[55] = { name="rotary_auto_ammo_box_ap", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[56] = { name="rotary_auto_ammo_box_i", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[57] = { name="heavy_auto_ammo_box_k", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[58] = { name="heavy_auto_ammo_box_he", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[59] = { name="heavy_auto_ammo_box_he_frag", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[60] = { name="heavy_auto_ammo_box_ap", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[61] = { name="heavy_auto_ammo_box_i", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[62] = { name="battle_shell_k", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[63] = { name="battle_shell_he", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[64] = { name="battle_shell_he_frag", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[65] = { name="battle_shell_ap", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[66] = { name="battle_shell_i", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[67] = { name="artillery_shell_k", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[68] = { name="artillery_shell_he", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[69] = { name="artillery_shell_he_frag", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[70] = { name="artillery_shell_ap", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[71] = { name="artillery_shell_i", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[72] = { name="glowstick", active = false,  ival = nil, fval = nil, pay= 0 };
+	eq_items[73] = { name="dog_whistle", active = false,  ival = nil, fval = nil, pay= 0 };
 	
 	if g_savedata.settings == false then
 		on_restore_settings();
@@ -781,6 +920,9 @@ function SetCharacterItems(id, items, need_pay, activate)
 	local my_research_points = server.getResearchPoints();
 	for idx, e in pairs (items) do
 		local item = eq_items[e.eq_id];
+		if item == nil then
+			item = { name="unknown item", active = false,  ival = nil, fval = nil, pay= 0 };
+		end;
 		local ival = item.ival;
 		local fval = item.fval;
 		if (item.pay > 0 and my_currency < item.pay and need_pay) then 
