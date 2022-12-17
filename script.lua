@@ -4,7 +4,6 @@ g_savedata = {
 	["day"] = 0,
 	["settings"] = false,
 	["vehicles"] = {},
-	["all_vehicles"] = {},
 	["no_pay_sw_items"] = false
 }
 need_seat_player = false;
@@ -244,7 +243,7 @@ function onToggleMap(peer_id, is_open)
 	local is_settings = server.getGameSettings()["settings_menu"];
 	if not is_settings then
 		if is_open then--open map
-			for i = 2, 5 do
+			for i = 2, 9 do
 				local eq_id, success = server.getCharacterItem(g_savedata.player.id, i);
 				if success then 
 					if eq_id == 19 then --radio
@@ -254,10 +253,10 @@ function onToggleMap(peer_id, is_open)
 			end;
 			
 			for id, worker in pairs (g_savedata.workers) do
-				for i = 2, 5 do
+				for i = 2, 9 do
 				local eq_id, success = server.getCharacterItem(id, i);
 				if success then 
-					if true or eq_id == 19 then --radio
+					if eq_id == 19 then --radio
 						local ui_id = server.getMapID();
 						worker.map_marker = ui_id;
 						--[[
@@ -281,14 +280,14 @@ function onToggleMap(peer_id, is_open)
 						local worker_matrix, success = server.getObjectPos(worker.id);
 						local x, y, z = matrix.position(worker_matrix);
 						local text = worker.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
-						server.addMapObject(peer_id, ui_id, 2, 1, x, z, 0, 0, nil, worker.id, worker.name, 0, text);
+						server.addMapObject(peer_id, ui_id, 2, 4, x, z, 0, 0, nil, worker.id, worker.name, 0, text);
 					end;
 				end;
 			end;
 			end;
 			
 		else --close map
-			server.setGameSetting("map_show_players", true);
+			server.setGameSetting("map_show_players", false);
 			for id, worker in pairs (g_savedata.workers) do
 				if (worker.map_marker ~= nil) then
 					server.removeMapObject(peer_id, worker.map_marker);
@@ -403,8 +402,24 @@ function isPlayerVehicle(vehicle_id)
 	else
 		return v.peer_id > -1;
 	end;
-	
 end;
+
+function nearestVehicle()
+	local tgt_vid = -1;
+	local bestD = 100;
+	local player_matrix, _ = server.getPlayerPos(g_savedata.player.peer_id);
+	for id, vehicle in pairs (g_savedata.vehicles) do
+		local transform_matrix, is_success = server.getVehiclePos(id);
+		if is_success then
+			local distSQ = distQ(transform_matrix, player_matrix);
+			if (bestD > distSQ) then
+				bestD = distSQ;
+				tgt_vid = id;
+			end;
+		end
+	end
+	return tgt_vid;
+end
 
 function onCharacterSit(object_id, vehicle_id, seat_name)
 	if object_id == g_savedata.player.id then
@@ -454,7 +469,7 @@ function on_restore_settings( )
 	server.setGameSetting("megalodon", true)
 	server.setGameSetting("map_show_players", false)
 	server.setGameSetting("map_show_vehicles", false)
-	server.setGameSetting("show_3d_waypoints", true)
+	server.setGameSetting("show_3d_waypoints", false)
 	server.setGameSetting("show_name_plates", true)
 	server.setGameSetting("infinite_money", false)
 	server.setGameSetting("settings_menu", false)
@@ -476,30 +491,38 @@ end;
 
 function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost) 
 	
-	local name, is_success = server.getVehicleName(vehicle_id);
-	if (is_success) then
-		g_savedata.all_vehicles[vehicle_id] = { vehiche_cost = cost, vehiche_name = name  };
-	end;
 	
 	if (peer_id == g_savedata.player.peer_id) then
 		if g_savedata.settings == false then
 			on_restore_settings();
 			g_savedata.settings = true;
 		end;
+		local name, is_success = server.getVehicleName(vehicle_id);
 		if is_success then
+			local days_survived = server.getDateValue();
 			local pos = matrix.translation(x, y, z);
 			local vdata, is_success = server.getVehicleData(vehicle_id);
-			g_savedata.vehicles[vehicle_id] = { peer_id = peer_id, name = name, transform = pos, dx = 0, dy = 0, dz= 0, ticks = 0, state = "SPAWNED", cost = cost, file = vdata.filename};
+			g_savedata.vehicles[vehicle_id] = 
+				{ peer_id = peer_id, 
+					name = name, 
+					transform = pos, 
+					dx = 0, 
+					dy = 0, 
+					dz= 0, 
+					ticks = 0, 
+					state = "SPAWNED", 
+					cost = cost, 
+					spawn_time=days_survived, 
+					file = vdata.filename
+				};
+			--server.setVehicleEditable(vehicle_id, false);
 		end;
-	else
-		server.setVehicleEditable(vehicle_id, true);
 	end;
 	
 end;
 
 function onVehicleDespawn(vehicle_id, peer_id)
 	g_savedata.vehicles[vehicle_id] = nil;
-	g_savedata.all_vehicles[vehicle_id] = nil;
 end;
 
 function onVehicleUnload(vehicle_id)
@@ -566,7 +589,7 @@ function Traffic(  )
 --								local text = h.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
 --								local ui_id = server.getMapID();
 --								h.map_marker = ui_id;
---								server.addMapObject(peer_id, h.map_marker, 2, 1, x, z, 0, 0, nil, h.id, h.name, 0, text);
+--								server.addMapObject(peer_id, h.map_marker, 2, 4, x, z, 0, 0, nil, h.id, h.name, 0, text);
 --							end;
 --						end;
 --						break;
@@ -599,7 +622,7 @@ function Traffic(  )
 								local text = h.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
 								local ui_id = server.getMapID();
 								h.map_marker = ui_id;
-								server.addMapObject(peer_id, h.map_marker, 2, 1, x, z, 0, 0, nil, h.id, h.name, 0, text);
+								server.addMapObject(peer_id, h.map_marker, 2, 4, x, z, 0, 0, nil, h.id, h.name, 0, text);
 							end;
 						end;
 						break;
@@ -739,6 +762,15 @@ function onPlayerLeave(steam_id, name, peer_id, admin, auth)
 	
 end
 
+function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
+	local my_currency = server.getCurrency();
+	local my_research_points = server.getResearchPoints();
+	my_currency = my_currency - 2000;
+	local text = "Player saved for 2000$";
+	server.announce(g_savedata.player.team_name, text, g_savedata.player.peer_id);
+	server.setCurrency(my_currency, my_research_points);
+end
+
 function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command, arg1, arg2, arg3, arg4, arg5)
 	if (command == "?help")	then printHelp(arg1); end;
 	if (command == "?hire") then 
@@ -770,8 +802,70 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?activate_items") then ativate_items(arg1); end;
 	if (command == "?no_pay_sw_items") then g_savedata.no_pay_sw_items = true; end;
 	if (command == "?pay_sw_items") then g_savedata.no_pay_sw_items = false; end;
+	if (command == "?sell_vehicle") then sellVehicle(); end;
+	if (command == "?edit_vehicle") then editVehicle(); end;
 end
 
+function sellVehicle()
+	local vehicle_id = nearestVehicle();
+	if vehicle_id >= 0 then
+		if isPlayerVehicle(vehicle_id) then
+			local my_currency = server.getCurrency();
+			local my_research_points = server.getResearchPoints();
+			--[[
+			g_savedata.vehicles[vehicle_id] = 
+		{ peer_id = peer_id, 
+			name = name, 
+			transform = pos, 
+			dx = 0, 
+			dy = 0, 
+			dz= 0, 
+			ticks = 0, 
+			state = "SPAWNED", 
+			cost = cost, 
+			spawn_time=days_survived, 
+			file = vdata.filename
+		};
+			]]--
+			local vehicle = g_savedata.vehicles[vehicle_id];
+			local days_survived = server.getDateValue();
+			local days = days_survived - vehicle.spawn_time;
+			local cash = vehicle.cost - vehicle.cost * days * 0.1;
+			my_currency = my_currency + cash;
+			local text = "Vehicle selling for "..cash .."$";
+			server.announce(g_savedata.player.team_name, text, g_savedata.player.peer_id);
+			server.setCurrency(my_currency, my_research_points);
+			server.despawnVehicle(vehicle_id, false);
+			g_savedata.vehicles[vehicle_id] = nil;
+		else
+			server.announce("[HELP]", "Error Not a Player Vehile!", g_savedata.player.peer_id);
+		end
+	else
+		server.announce("[HELP]", "Error No Vehile for Sale!", g_savedata.player.peer_id);
+	end
+end
+
+function editVehicle()
+	local vehicle_id = nearestVehicle();
+	if vehicle_id >= 0 then
+		if isPlayerVehicle(vehicle_id) then
+			local VEHICLE_DATA, is_success = server.getVehicleData(vehicle_id);
+			if is_success then
+				local editable = not VEHICLE_DATA.editable;
+				server.setVehicleEditable(vehicle_id, editable);
+				if editable then 
+					server.announce(g_savedata.player.team_name, "Vehicle is EDITABLE", g_savedata.player.peer_id);
+				else
+					server.announce(g_savedata.player.team_name, "Vehicle is NOT EDITABLE", g_savedata.player.peer_id);
+				end
+			end	
+		else
+			server.announce("[HELP]", "Error Not a Player Vehile!", g_savedata.player.peer_id);
+		end
+	else
+		server.announce("[HELP]", "Error No a Vehile for Edit!", g_savedata.player.peer_id);
+	end
+end
 
 function printHelp(arg1)
 	if arg1 == nil then
@@ -788,6 +882,8 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?pay_sw_items", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?refuel", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?unlock_all_components", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?sell_vehicle", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?edit_vehicle", g_savedata.player.peer_id)
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -860,6 +956,7 @@ function hire( arg1 )
 		server.setPopup(-1, g_savedata.workers[rescuer_id].pop_up, g_savedata.workers[rescuer_id].name, true, text, 0, 1.0, 0, 5, 0, g_savedata.workers[rescuer_id].id);
 		local my_currency = server.getCurrency() - (pay * 10);
 		local my_research_points = server.getResearchPoints();
+		local cost = 
 		server.setCurrency(my_currency, my_research_points);
 		server.announce(g_savedata.player.team_name, "Pay for new worker $" ..(pay *10).. ". Balance: $" ..my_currency, g_savedata.player.peer_id);		
 	end;
@@ -904,7 +1001,7 @@ end;
 
 function GrabCharacterItems(id)
 	local items = {};
-	for i = 1, 6 do
+	for i = 1, 10 do
 		local eq_id, success = server.getCharacterItem(id, i);
 		if success then 
 			items[i] = { eq_id = eq_id };
