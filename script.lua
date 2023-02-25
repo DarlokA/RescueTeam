@@ -327,7 +327,32 @@ function isSimulatedSit(object_id)
 	end
 	return false, nil
 end
+--local worker = { name = worker_name, 
+					--outfit = outfit, 
+					--is_powered = true, 
+					--isPlayer = false, 
+					--id=rescuer_id, 
+					--is_sit = false, 
+					--vehicle_id = -1, 
+					--seat_name= nil, 
+					--pop_up=server.getMapID(), 
+					--powered_time = server.getDateValue(), 
+					--pay = pay}
 
+function isVehicleSit( vehicle_id )
+	for _wid, worker in pairs(g_savedata.workers) do
+		if worker ~= nil and worker.vehicle_id == vehicle_id then
+			need_seat_worker = true;
+			tgt_worker_vehicle_id = vehicle_id;
+			tgt_worker_seat_name = worker.seat_name;
+			sit_worker_id = _wid;
+			--server.announce("[" ..worker.name.. "]", "Sit to vehicle_id: "..tgt_worker_vehicle_id.. ", seatName: " ..tgt_worker_seat_name, g_savedata.player.peer_id);
+			worker_seat_ticks = 0;
+			return true;
+		end
+	end
+	return false;
+end
 
 function checkSit()
 	if need_seat_player then 
@@ -419,6 +444,23 @@ function nearestVehicle()
 		end
 	end
 	return tgt_vid;
+end
+
+function onCharacterUnsit(object_id, vehicle_id, seat_name)
+	if object_id == g_savedata.player.id and not need_seat_player then
+		g_savedata.player.is_sit = false;
+		g_savedata.player.vehicle_id = -1;
+		g_savedata.player.seat_name = nil;
+	end
+	if not need_seat_worker then
+		for id, h in pairs(g_savedata.workers) do
+			if id == object_id then
+				g_savedata.workers[id].is_sit = false;
+				g_savedata.workers[id].vehicle_id = -1;
+				g_savedata.workers[id].seat_name = nil;
+			end
+		end
+	end
 end
 
 function onCharacterSit(object_id, vehicle_id, seat_name)
@@ -540,6 +582,9 @@ function onVehicleLoad(vehicle_id)
 			--server.resetVehicleState(vehicle_id);
 		--end;
 		vehicle.state = "SIMULATED";
+	end;
+	if (isVehicleSit(vehicle_id)) then	
+		checkSit();
 	end;
 	
 	if need_seat_player and vehicle_id == tgt_player_vehicle_id then
@@ -763,6 +808,7 @@ function onPlayerLeave(steam_id, name, peer_id, admin, auth)
 end
 
 function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
+	
 	local my_currency = server.getCurrency();
 	local my_research_points = server.getResearchPoints();
 	my_currency = my_currency - 2000;
