@@ -4,8 +4,13 @@ g_savedata = {
 	["day"] = 0,
 	["settings"] = false,
 	["vehicles"] = {},
-	["no_pay_sw_items"] = false
+	["no_pay_sw_items"] = false,
+	["PlayerVehicles"]= {},
+	["GenericVehicles"] = {},
+	["Enemy_AI"] = {},
+	["Waypoints"] = {},
 }
+temp = {}
 need_seat_player = false;
 tgt_player_vehicle_id = -1;
 tgt_player_seat_name = nil;
@@ -45,7 +50,22 @@ eq_items = {};
 	pay = pay}
 --]]
 function onCreate(is_world_create)
-	offsetType[1] = { name = "worker", pay = 100 }
+	if g_savedata["Waypoints"] == nil then
+		g_savedata.Waypoints = {};
+	end
+
+
+	offsetType[1] = { name = "worker", pay = 100}
+	offsetType[2] = { name = "fishing", pay = 100 }
+	offsetType[3] = { name = "waiter", pay = 100 }
+	offsetType[4] = { name = "swimsuit", pay = 100 }
+	offsetType[5] = { name = "military", pay = 100 }
+	offsetType[6] = { name = "office", pay = 100 }
+	offsetType[7] = { name = "police", pay = 100 }
+	offsetType[8] = { name = "science", pay = 100 }
+	offsetType[9] = { name = "medical", pay = 100 }
+	offsetType[10] = { name = "wetsuit", pay = 100 }
+	offsetType[11] = { name = "civilian", pay = 100 }
 	--[[
 	OUTFIT_TYPE |
 	0 = none,
@@ -560,11 +580,21 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 			--server.setVehicleEditable(vehicle_id, false);
 		end;
 	end;
+	local name = (server.getVehicleName(vehicle_id))
+	if peer_id ~= -1 then
+		g_savedata["PlayerVehicles"][vehicle_id] = name
+		g_savedata["GenericVehicles"][vehicle_id] = name
+	else
+		temp[vehicle_id] = (server.getVehicleData(vehicle_id))
+	end
 	
 end;
 
 function onVehicleDespawn(vehicle_id, peer_id)
 	g_savedata.vehicles[vehicle_id] = nil;
+	g_savedata["PlayerVehicles"][vehicle_id] = nil
+	g_savedata["GenericVehicles"][vehicle_id] = nil
+	g_savedata["Enemy_AI"][vehicle_id] = nil
 end;
 
 function onVehicleUnload(vehicle_id)
@@ -670,6 +700,7 @@ function Traffic(  )
 								server.addMapObject(peer_id, h.map_marker, 2, 4, x, z, 0, 0, nil, h.id, h.name, 0, text);
 							end;
 						end;
+						
 						break;
 					end;
 				end;
@@ -785,6 +816,15 @@ function onTick(game_ticks)
 	tryingSitWorker();
 	tryingSitPlayer();
 	Traffic();
+	
+	for a,b in pairs(temp) do
+		if b["tags"][1] == "type=dlc_weapons" then
+			g_savedata["Enemy_AI"][a] = (server.getVehicleName(a))
+		end
+		g_savedata["GenericVehicles"][a] = (server.getVehicleName(a))
+		temp[a] = nil
+	end
+	
 end
 
 
@@ -816,6 +856,15 @@ function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
 	server.announce(g_savedata.player.team_name, text, g_savedata.player.peer_id);
 	server.setCurrency(my_currency, my_research_points);
 end
+
+function WorkerFromName( name )
+	for _id, h in pairs(g_savedata.workers) do
+		if name == h.name then
+			return _id, h;
+		end
+	end
+	return nil, nil;
+end;
 
 function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command, arg1, arg2, arg3, arg4, arg5)
 	if (command == "?help")	then printHelp(arg1); end;
@@ -850,7 +899,95 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?pay_sw_items") then g_savedata.no_pay_sw_items = false; end;
 	if (command == "?sell_vehicle") then sellVehicle(); end;
 	if (command == "?edit_vehicle") then editVehicle(); end;
+	if (command == "?set_waypoint") then set_waypoint(arg1, arg2, arg3); end;
+	if (command == "?reset_waypoint") then reset_waipoint(arg1); end;
+	if (command == "?ai_stop") then ai_stop(arg1); end;
+	if (command == "?ai_path") then ai_path(arg1, arg2, arg3); end;
 end
+
+function ai_path(arg1, arg2, arg3)
+	local id, worker = WorkerFromName(arg1);
+	local pathing = false;
+	local wp_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
+	local x,y,z = matrix.position(wp_pos);
+	if (id ~= nil and worker ~= nil) then
+		local x = tonumber(arg2);
+		local z = tonumber(arg3);
+		if x ~= nil and z ~= nil then
+			wp_pos = matrix.translation(x, y, z);
+			pathing = wp_pos ~= nil;
+		else
+			local wname = arg2;
+			if wname ~= nil then
+				local wp = g_savedata["Waypoints"][wname];
+				if wp ~= nil then
+					wp_pos = wp.position;
+					patching = wp_pos ~= nil;
+				end;
+			end
+		end
+	end;
+	if patching then
+		server.setAITarget(id, wp_pos);
+		server.setAIState(id, 1);
+		g_savedata.workers[id].ai_state = "path";
+		server.announce(g_savedata.player.team_name, worker.name.." pathing", g_savedata.player.peer_id);
+	end;
+end;
+
+function ai_stop(arg1)
+		local id, worker = WorkerFromName(arg1);
+		if (id ~= nil and worker ~= nil) then
+			server.setAIState(id, 0);
+			g_savedata.workers[id].ai_state = nil;
+			server.announce(g_savedata.player.team_name, worker.name.." stopped", g_savedata.player.peer_id);
+		end;
+end;
+
+function set_waypoint( arg1, arg2, arg3 )
+	local wp_pos, success = server.getPlayerPos(g_savedata.player.peer_id);
+	local x,y,z = matrix.position(wp_pos);
+	local wname = arg1;
+	local add = false;
+	if arg1 ~= nil then
+		if arg2 ~= nil and arg3 ~= nil then
+			x = tonumber(arg1);
+			z = tonumber(arg2);
+			wname = arg3;
+			if x ~= nil and z ~= nil then
+				wp_pos = matrix.translation(x, y, z);
+				add = true;
+			end		
+		else
+			wname = arg1;
+			add = true;
+		end;
+	end;
+	if add then
+		local wp = g_savedata["Waypoints"][wname];
+		if (wp ~= nil and wp.mapid ~= nil) then
+			server.removeMapObject(g_savedata.player.peer_id, wp.mapid);
+			g_savedata["Waypoints"][wname] = nil;
+		end;
+		local ui_id = server.getMapID();
+		local text = "Waypoint : "..wname;
+		server.addMapLabel(g_savedata.player.peer_id, ui_id, 1, wname, x, z);
+		g_savedata["Waypoints"][wname] = {position = wp_pos, mapid = ui_id };
+		server.announce(g_savedata.player.team_name, "Add waipoint "..wname.." to map", g_savedata.player.peer_id);
+	end;
+end;
+
+function reset_waipoint( arg1 )
+	if arg1 ~= nil then
+		local wname = arg1;
+		local wp = g_savedata["Waypoints"][wname];
+		if (wp ~= nil and wp.mapid ~= nil) then
+			server.removeMapObject(g_savedata.player.peer_id, wp.mapid);
+			g_savedata["Waypoints"][wname] = nil;
+			server.announce(g_savedata.player.team_name, "Waipoint "..wname.." removed from map", g_savedata.player.peer_id);
+		end;
+	end;
+end;
 
 function sellVehicle()
 	local vehicle_id = nearestVehicle();
@@ -929,7 +1066,13 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?refuel", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?unlock_all_components", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?sell_vehicle", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?edit_vehicle", g_savedata.player.peer_id)
+		server.announce("[HELP]", "?edit_vehicle", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?set_waypoint x z name or ?set_waypoint name", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?reset_waypoint name", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?ai_stop worker", g_savedata.player.peer_id);
+		server.announce("[HELP]", "?ai_path worker_name waypoint_name or ?ai_path worker_name x z", g_savedata.player.peer_id);
+		--server.command("?ai_summon_hospital_ship "..mission.data.zone_x.." "..mission.data.zone_z)
+		
 	end;
 	if arg1 == "hire" or arg1 == "?hire" then
 		server.announce("[HELP]", "?hire professions:", g_savedata.player.peer_id);
@@ -996,6 +1139,7 @@ function hire( arg1 )
 		z = z + lz*2
 		local rescuer_pos = matrix.translation(x, y, z)
 		local rescuer_id = server.spawnCharacter(rescuer_pos, outfit);
+		server.command("?set_gunner "..rescuer_id);
 		local worker = { name = worker_name, outfit = outfit, is_powered = true, isPlayer = false, id=rescuer_id, is_sit = false, vehicle_id = -1, seat_name= nil, pop_up=server.getMapID(), powered_time = server.getDateValue(), pay = pay}
 		g_savedata.workers[rescuer_id] = worker;
 		local text = worker_name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
@@ -1027,6 +1171,7 @@ function dismissW(arg1)
 		end;
 	end;
 	if worker ~= nil then
+		ai_stop(worker.name);
 		server.removePopup(g_savedata.player.peer_id, worker.pop_up);
 		local w_data = server.getCharacterData(worker.id);
 		--{["hp"] = hp, ["incapacitated"] = is_incapacitated, ["dead"] = is_dead, ["interactible"] = is_interactable, ["ai"] = is_ai, ["name"] = name} = server.getCharacterData(object_id)
@@ -1134,6 +1279,7 @@ function switch2W(arg1)
 		end;
 	end;
 	if worker ~= nil then
+		ai_stop(worker.name);
 		need_seat_player = isSit(worker.id);
 		if (need_seat_player) then
 			tgt_player_vehicle_id = worker.vehicle_id;
@@ -1247,6 +1393,16 @@ end;
 function printD( arg1 )
 	server.announce("[debug]", arg1, g_savedata.player.peer_id);
 end;
+
+function calculate_distance_to_next_waypoint(path_pos, vehicle_pos)
+    local vehicle_x, vehicle_y, vehicle_z = matrix.position(vehicle_pos)
+
+    local vector_x = path_pos.x - vehicle_x
+    local vector_z = path_pos.z - vehicle_z
+
+    return math.sqrt( (vector_x * vector_x) + (vector_z * vector_z))
+end
+
 
 function distQ( m1, m2)
 	local x1, y1, z1 = matrix.position(m1);
