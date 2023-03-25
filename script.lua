@@ -689,6 +689,7 @@ function Traffic(  )
 				
 				for id, h in pairs(g_savedata.workers) do
 					if h.vehicle_id == vehicle_id then
+						local worker_matrix, success = server.getObjectPos(id);
 						if map_opened then
 							if (h.map_marker ~= nil) then
 								server.removeMapObject(vehicle.peer_id, h.map_marker);
@@ -700,7 +701,26 @@ function Traffic(  )
 								server.addMapObject(peer_id, h.map_marker, 2, 4, x, z, 0, 0, nil, h.id, h.name, 0, text);
 							end;
 						end;
-						
+						if h.ai_state == "path" then
+							if calculate_distance_to_next_waypoint(worker_matrix, ai_path) < 100 then
+								g_savedata.workers[id].ai_state = nil;
+								g_savedata.workers[id].ai_path = nil;
+								g_savedata.workers[id].ai_time = nil;
+							else
+								g_savedata.workers[id].ai_time = g_savedata.workers[id].ai_time + 1;
+								if (g_savedata.workers[id].ai_time > 300) then
+									local path_list = createPath(vehicle_id);
+									local vehicle_pos = server.getVehiclePos(vehicle_id)
+									local distance = calculate_distance_to_next_waypoint(path_list[1], vehicle_pos)
+									if (distance < 100) then
+										table.remove(path_list, 1)
+									end
+									g_savedata.workers[id].ai_time = 0
+									server.setAITarget(id, (matrix.translation(path_list[1].x, 0, path_list[01].z)));
+									server.setAIState(id, 1);
+								end
+							end;
+						end;
 						break;
 					end;
 				end;
@@ -709,6 +729,28 @@ function Traffic(  )
 		end;
 	end;
 end;
+
+function createPath(vehicle_id)
+
+    local vehicle_object = g_savedata.vehicles[vehicle_id]
+    local vehicle_pos = server.getVehiclePos(vehicle_id)
+
+    local avoid_tags = ""
+    --if vehicle_object.size == "large" then
+     --   avoid_tags = "size=null,size=small,size=medium"
+    --end
+    --if vehicle_object.size == "medium" then
+     --   avoid_tags = "size=null,size=small"
+    --end
+
+    local path_list = server.pathfind(vehicle_pos, (matrix.translation(vehicle_object.destination.x, 50, vehicle_object.destination.z)), "ocean_path", avoid_tags)
+    --for path_index, path in pairs(path_list) do
+    --   path.ui_id = server.getMapID()
+    --end
+
+   return path_list
+end
+
 
 function tryingSitPlayer()
 	if (need_seat_player) then
@@ -931,6 +973,8 @@ function ai_path(arg1, arg2, arg3)
 		server.setAITarget(id, wp_pos);
 		server.setAIState(id, 1);
 		g_savedata.workers[id].ai_state = "path";
+		g_savedata.workers[id].ai_path = wp_pos;
+		g_savedata.workers[id].ai_time = 0;
 		server.announce(g_savedata.player.team_name, worker.name.." pathing", g_savedata.player.peer_id);
 	end;
 end;
@@ -940,6 +984,8 @@ function ai_stop(arg1)
 		if (id ~= nil and worker ~= nil) then
 			server.setAIState(id, 0);
 			g_savedata.workers[id].ai_state = nil;
+			g_savedata.workers[id].ai_path = nil;
+			g_savedata.workers[id].ai_time = nil;
 			server.announce(g_savedata.player.team_name, worker.name.." stopped", g_savedata.player.peer_id);
 		end;
 end;
@@ -995,21 +1041,8 @@ function sellVehicle()
 		if isPlayerVehicle(vehicle_id) then
 			local my_currency = server.getCurrency();
 			local my_research_points = server.getResearchPoints();
-			--[[
-			g_savedata.vehicles[vehicle_id] = 
-		{ peer_id = peer_id, 
-			name = name, 
-			transform = pos, 
-			dx = 0, 
-			dy = 0, 
-			dz= 0, 
-			ticks = 0, 
-			state = "SPAWNED", 
-			cost = cost, 
-			spawn_time=days_survived, 
-			file = vdata.filename
-		};
-			]]--
+	
+			
 			local vehicle = g_savedata.vehicles[vehicle_id];
 			local days_survived = server.getDateValue();
 			local days = days_survived - vehicle.spawn_time;
