@@ -686,14 +686,14 @@ function Traffic(  )
 				g_savedata.vehicles[vehicle_id].dz = z2 - z1;
 				g_savedata.vehicles[vehicle_id].transform = pos_matrix;
 				
-				
+				--[[
 				for id, h in pairs(g_savedata.workers) do
 					if h.vehicle_id == vehicle_id then
 						local worker_matrix, success = server.getObjectPos(id);
 						if map_opened then
 							if (h.map_marker ~= nil) then
 								server.removeMapObject(vehicle.peer_id, h.map_marker);
-								local worker_matrix, success = server.getObjectPos(id);
+								--local worker_matrix, success = server.getObjectPos(id);
 								local x, y, z = matrix.position(worker_matrix);
 								local text = h.name.. " powered by " ..server.getPlayerName(g_savedata.player.peer_id);
 								local ui_id = server.getMapID();
@@ -701,36 +701,28 @@ function Traffic(  )
 								server.addMapObject(peer_id, h.map_marker, 2, 4, x, z, 0, 0, nil, h.id, h.name, 0, text);
 							end;
 						end;
-						if h.ai_state == "path" then
-							if calculate_distance_to_next_waypoint(worker_matrix, ai_path) < 100 then
+						if h.ai_state == "path" and g_savedata.workers[id].ai_path ~= nil then
+							local dist = calculate_distance_to_next_waypoint(worker_matrix, g_savedata.workers[id].ai_path);
+							if dist < 100 then
 								g_savedata.workers[id].ai_state = nil;
 								g_savedata.workers[id].ai_path = nil;
 								g_savedata.workers[id].ai_time = nil;
 							else
-								g_savedata.workers[id].ai_time = g_savedata.workers[id].ai_time + 1;
-								if (g_savedata.workers[id].ai_time > 300) then
-									local path_list = createPath(vehicle_id);
-									local vehicle_pos = server.getVehiclePos(vehicle_id)
-									local distance = calculate_distance_to_next_waypoint(path_list[1], vehicle_pos)
-									if (distance < 100) then
-										table.remove(path_list, 1)
-									end
-									g_savedata.workers[id].ai_time = 0
-									server.setAITarget(id, (matrix.translation(path_list[1].x, 0, path_list[01].z)));
-									server.setAIState(id, 1);
-								end
+								local x, y, z = matrix.position(g_savedata.workers[id].ai_path);
+								server.setAITarget(id, (matrix.translation(x, 0, z)));
+								server.setAIState(id, 1);
 							end;
 						end;
 						break;
 					end;
 				end;
-				
+				]]--
 			--end;
 		end;
 	end;
 end;
 
-function createPath(vehicle_id)
+function createPath(vehicle_id, x, z)
 
     local vehicle_object = g_savedata.vehicles[vehicle_id]
     local vehicle_pos = server.getVehiclePos(vehicle_id)
@@ -743,7 +735,7 @@ function createPath(vehicle_id)
      --   avoid_tags = "size=null,size=small"
     --end
 
-    local path_list = server.pathfind(vehicle_pos, (matrix.translation(vehicle_object.destination.x, 50, vehicle_object.destination.z)), "ocean_path", avoid_tags)
+    local path_list = server.pathfind(vehicle_pos, (matrix.translation(x, 50, z)), "ocean_path", avoid_tags)
     --for path_index, path in pairs(path_list) do
     --   path.ui_id = server.getMapID()
     --end
@@ -942,9 +934,9 @@ function onCustomCommand(full_message, user_peer_id, is_admin, is_auth, command,
 	if (command == "?sell_vehicle") then sellVehicle(); end;
 	if (command == "?edit_vehicle") then editVehicle(); end;
 	if (command == "?set_waypoint") then set_waypoint(arg1, arg2, arg3); end;
-	if (command == "?reset_waypoint") then reset_waipoint(arg1); end;
-	if (command == "?ai_stop") then ai_stop(arg1); end;
-	if (command == "?ai_path") then ai_path(arg1, arg2, arg3); end;
+	if (command == "?reset_waypoint") then reset_waypoint(arg1); end;
+	--if (command == "?ai_stop") then ai_stop(arg1); end;
+	--if (command == "?ai_path") then ai_path(arg1, arg2, arg3); end;
 end
 
 function ai_path(arg1, arg2, arg3)
@@ -1023,7 +1015,7 @@ function set_waypoint( arg1, arg2, arg3 )
 	end;
 end;
 
-function reset_waipoint( arg1 )
+function reset_waypoint( arg1 )
 	if arg1 ~= nil then
 		local wname = arg1;
 		local wp = g_savedata["Waypoints"][wname];
@@ -1102,8 +1094,8 @@ function printHelp(arg1)
 		server.announce("[HELP]", "?edit_vehicle", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?set_waypoint x z name or ?set_waypoint name", g_savedata.player.peer_id);
 		server.announce("[HELP]", "?reset_waypoint name", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?ai_stop worker", g_savedata.player.peer_id);
-		server.announce("[HELP]", "?ai_path worker_name waypoint_name or ?ai_path worker_name x z", g_savedata.player.peer_id);
+		--server.announce("[HELP]", "?ai_stop worker", g_savedata.player.peer_id);
+		--server.announce("[HELP]", "?ai_path worker_name waypoint_name or ?ai_path worker_name x z", g_savedata.player.peer_id);
 		--server.command("?ai_summon_hospital_ship "..mission.data.zone_x.." "..mission.data.zone_z)
 		
 	end;
@@ -1429,9 +1421,9 @@ end;
 
 function calculate_distance_to_next_waypoint(path_pos, vehicle_pos)
     local vehicle_x, vehicle_y, vehicle_z = matrix.position(vehicle_pos)
-
-    local vector_x = path_pos.x - vehicle_x
-    local vector_z = path_pos.z - vehicle_z
+	local path_pos_x, path_pos_y, path_pos_z = matrix.position(path_pos)
+    local vector_x = path_pos_x - vehicle_x
+    local vector_z = path_pos_z - vehicle_z
 
     return math.sqrt( (vector_x * vector_x) + (vector_z * vector_z))
 end
